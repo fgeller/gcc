@@ -4,7 +4,18 @@
 (def atom? number?)
 (defn quote? [p] (= 'quote (first p)))
 
-(def primitives {'= "CEQ" '< "CLT" '> "CGT" 'car "CAR" 'cdr "CDR" '- "SUB" 'atom? "ATOM"})
+(def lambda-counter (atom 0))
+
+(def primitives {
+                 '= "CEQ"
+                 '< "CLT"
+                 '> "CGT"
+                 'cons "CONS"
+                 'car "CAR"
+                 'cdr "CDR"
+                 '- "SUB"
+                 'atom? "ATOM"
+                 })
 (defn primitive-1? [p] (and (list? p) (= 2 (count p)) (some #(= % (first p)) (keys primitives))))
 (defn primitive-2? [p] (and (list? p) (= 3 (count p)) (some #(= % (first p)) (keys primitives))))
 
@@ -23,6 +34,15 @@
 (defn var-ref? [p env]
   (and (symbol? p) (find env p)))
 
+(defn undefined-var-ref? [p env]
+  (and (symbol? p) (not (find env p))))
+
+(defn add-name-to-first-instruction [name instructions]
+  (let [[first-instruction names] (nth instructions 0)
+        remaining-instructions (rest instructions)]
+    `[~[first-instruction (vec (conj names (str name)))] ~@remaining-instructions]))
+
+
 (defn tp [p env]
   (println "tp p" p "env" env)
 
@@ -36,6 +56,11 @@
    (do
      (println "chose var-ref")
      [[(env p)]])
+
+   (undefined-var-ref? p env)
+   (do
+     (println "===== chose undefined var-ref for" p)
+     [[(str "LDF @" p)]])
 
    (primitive-1? p)
    (do
@@ -55,10 +80,14 @@
    (lambda? p)
    (do
      (println "chose lambda")
+     (swap! lambda-counter #(+ 1 %))
      (let [args (nth p 1)
            body (nth p 2)
-           new-env (merge env (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args)))]
-       (tp body new-env)))
+           name (str "$lambda-" @lambda-counter)
+           new-env (merge env (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args)))
+           body-instructions (tp body new-env)]
+       (add-name-to-first-instruction name body-instructions)))
+
 
    (tif? p)
    (do
@@ -69,13 +98,9 @@
            pred-instructions  (vec (tp pred env))
            left-instructions  (vec (tp left env))
            right-instructions  (vec (tp right env))
-           tail-call-in-left (and
+           tail-call-in-left (and                             ;; hacky hacky
                               (not (var-ref? left env))
-                              (not (primitive-1? left))) ;; hacky hacky
-           ;; tail-call-ref (if tail-call-in-left (ffirst left-instructions) (ffirst right-instructions))
-           ;; ldf-instruction (do
-           ;;                   (str "LDF " tail-call-ref))
-;; TODO need to replace AP with TAP
+                              (not (primitive-1? left)))
            true-instructions (if tail-call-in-left
                                (let [[l] (last left-instructions)]
                                  `[~@(conj (pop left-instructions) [(str "T" l)])])
@@ -100,22 +125,22 @@
            body (nth p 2)
            id (str "LDF @" name) ; todo: need to distinguish between def and defn?
            new-env (merge env {name id})
-           body-instructions (tp body new-env)
-           first-instruction (nth body-instructions 0)
-           remaining-instructions (rest body-instructions)]
-       `[~[(first first-instruction) (str name)] ~@remaining-instructions]))
+           body-instructions (tp body new-env)]
+       (add-name-to-first-instruction name body-instructions)))
+
 
    (application? p env)
    (do
      (println "chose application")
      (let [fun (nth p 0)
+           a (println "got fun" fun)
            fun-instructions (tp fun env)
            args (rest p)
            args-instructions (vec (apply concat (map #(tp % env) args)))
            ap-instruction (str "AP " (count args))
            result `[~@args-instructions ~@fun-instructions ~[ap-instruction]]]
-       ;; (println "for p" p)
-       ;; (println "produce application" result)
+       (println "for p" p)
+       (println "produce application" result)
        result))
 
    true (println "i dunno how to tp" p)
