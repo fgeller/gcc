@@ -136,19 +136,6 @@
         }
        ))
 
-   ;; (lambda? p)
-   ;; (do
-   ;;   (println "chose lambda")
-   ;;   (swap! lambda-counter #(+ 1 %))
-   ;;   (let [args (nth p 1)
-   ;;         body (nth p 2)
-   ;;         name (str "$lambda-" @lambda-counter)
-   ;;         new-env (merge env (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args)))
-   ;;         {body-instructions :result body-lams :lambdas} (tp body lambdas new-env)
-   ;;         lambda-instructions (conj (add-name-to-first-instruction name body-instructions) ["RTN"])
-   ;;         load-lambda [(str "LDF @" name)]]
-   ;;     {:result [load-lambda] :lambdas (merge lambdas {name lambda-instructions} body-lams)}))
-
    (defun? p)
    (do
      (println "chose defun")
