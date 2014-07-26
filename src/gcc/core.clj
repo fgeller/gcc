@@ -59,7 +59,7 @@
 
    (undefined-var-ref? p env)
    (do
-     (println "===== chose undefined var-ref for" p)
+     (println "🙀 chose undefined var-ref for" p)
      [[(str "LDF @" p)]])
 
    (primitive-1? p)
