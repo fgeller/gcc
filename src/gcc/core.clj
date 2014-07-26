@@ -73,7 +73,7 @@
      (println "chose primitive-1")
      (let [command (primitives (nth p 0))
            {left-result :result lams :lambdas} (tp (nth p 1) lambdas env)]
-       {:result `[~@left-result ~[command]] :lambdas lams}))
+       {:result `[~@left-result ~[command]] :lambdas (merge lams)}))
 
    (primitive-2? p)
    (do
@@ -107,7 +107,6 @@
      (let [pred (nth p 1)
            left (nth p 2)
            right (nth p 3)
-           ;; pred-instructions  (vec (tp pred lambdas env))
            {pred-result :result pred-lams :lambdas} (tp pred lambdas env)
            pred-instructions (vec pred-result)
 
@@ -137,7 +136,7 @@
                   ~[(str "TSEL @" true-offset " @" false-offset)]
                   ~@true-instructions
                   ~@false-instructions]
-        :lambdas lambdas
+        :lambdas (merge lambdas pred-lams left-lams right-lams)
         }
        ))
 
