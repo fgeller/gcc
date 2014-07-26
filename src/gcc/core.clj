@@ -1,6 +1,10 @@
 (ns gcc.core
   (:require [clojure.java.io :as io]))
 
+;; TODO nil
+;; TODO TAP / RTN fix
+;; DONE env passing for lambdas
+
 (def atom? number?)
 (defn quote? [p] (= 'quote (first p)))
 
@@ -16,6 +20,7 @@
                  '- "SUB"
                  'atom? "ATOM"
                  })
+
 (defn primitive-1? [p] (and (list? p) (= 2 (count p)) (some #(= % (first p)) (keys primitives))))
 (defn primitive-2? [p] (and (list? p) (= 3 (count p)) (some #(= % (first p)) (keys primitives))))
 
@@ -86,7 +91,10 @@
      (let [args (nth p 1)
            body (nth p 2)
            name (str "$lambda-" @lambda-counter)
-           new-env (merge env (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args)))
+           env-with-updated-arg-refs (into {} (map (fn [[name instr]]
+                                                     [name (clojure.string/replace instr #"LD (\d+) (\d+)" (fn [[_ frm arg]] (str "LD " (+ 1 (string->number frm)) " " arg)))])
+                                                   env))
+           new-env (merge env-with-updated-arg-refs (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args)))
            {body-instructions :result body-lams :lambdas} (tp body lambdas new-env)
            lambda-instructions (conj (add-name-to-first-instruction name body-instructions) ["RTN"])
            load-lambda [(str "LDF @" name)]]
