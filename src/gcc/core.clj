@@ -45,7 +45,7 @@
 
 
 (defn tp [p lambdas env] ; => {:result [[]] :lambdas {:l1 [[]]}}
-  (println "tp p" p "lambdas" lambdas "env" env)
+  (println (format "tp p[%s] lambdas[%s] env[%s]" p lambdas env))
 
   (cond
    (atom? p)
@@ -67,19 +67,16 @@
    (do
      (println "chose primitive-1")
      (let [command (primitives (nth p 0))
-           {lr :result l :lambdas} (tp (nth p 1) lambdas env)
-           left (vec (flatten lr))]
-       {:result [left [command]] :lambdas l}))
+           {left-result :result lams :lambdas} (tp (nth p 1) lambdas env)]
+       {:result `[~@left-result ~[command]] :lambdas lams}))
 
    (primitive-2? p)
    (do
      (println "chose primitive-2")
      (let [command (primitives (nth p 0))
            {left-result :result left-lams :lambdas} (tp (nth p 1) lambdas env)
-           left  (vec (flatten left-result))
-           {right-result :result right-lams :lambdas} (tp (nth p 2) lambdas env)
-           right (vec (flatten right-result))]
-       {:result [left right [command]] :lambdas (merge left-lams right-lams)}))
+           {right-result :result right-lams :lambdas} (tp (nth p 2) lambdas env)]
+       {:result `[~@left-result ~@right-result ~[command]] :lambdas (merge left-lams right-lams)}))
 
 
    (lambda? p)
@@ -154,7 +151,6 @@
    (do
      (println "chose application")
      (let [fun (nth p 0)
-           a (println "got fun" fun)
            {fun-instructions :result fun-lams :lambdas} (tp fun lambdas env)
            args (rest p)
            x (map (fn [a] (tp a lambdas env)) args)
@@ -162,8 +158,8 @@
            args-lams (reduce (fn [old {res :result lams :lambdas}] (merge old lams)) {} x)
            ap-instruction (str "AP " (count args))
            result `[~@args-instructions ~@fun-instructions ~[ap-instruction]]]
-       (println "for p" p)
-       (println "produce application" result)
+       ;; (println "for p" p)
+       ;; (println "produce application" result)
        result
        {:result result :lambdas (merge lambdas fun-lams args-lams)}))
 
@@ -176,7 +172,6 @@
 
 (defn add-lines [lams]
   (let [flattened-lams (vec (apply concat (vals lams)))
-        a (println "flattened-lams to:" flattened-lams)
         [_ p-ast-with-lines names-lines] (reduce (fn [[l p m] [instr names]]
                                                    (if names
                                                      [(+ 1 l) (conj p [l instr]) (merge m (into {} (map (fn [n] {n l}) names)))]
@@ -202,7 +197,5 @@
         ast-wl (add-lines all)
         out (clojure.string/join "\n" (flatten (map (fn [[_ instr]] [instr]) ast-wl)))
         ]
-    (println "all:" all)
-    (println "ast-wl:" ast-wl)
     out
     ))
