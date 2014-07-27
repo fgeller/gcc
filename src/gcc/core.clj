@@ -1,7 +1,7 @@
 (ns gcc.core
   (:require [clojure.java.io :as io]))
 
-;; TODO nil
+;; DONE nil
 ;; DONE TAP / RTN fix
 ;; DONE env passing for lambdas
 ;; TODO automatic main insertion?
@@ -73,9 +73,14 @@
      (println "chose var-ref")
      {:result [[(env p)]] :lambdas lambdas})
 
+   (nil? p)
+   (do
+     (println "chose nil")
+     {:result [["LDC 0"]] :lambdas lambdas})
+
    (undefined-var-ref? p env)
    (do
-     (println "🙀 chose undefined var-ref for" p)
+     (println "🙀  chose undefined var-ref for" p)
      {:result [[(str "LDF @" p)]] :lambdas lambdas})
 
    (primitive-1? p)
@@ -202,7 +207,9 @@
     (vec result)))
 
 (defn gcc [defuns]
-  (let [asts (map #(tp % nil nil) defuns) ;; ({:result nil :lambdas {"a" 23}} {:result nil :lambdas {"a" 23}})
+  (let [base-env {}
+        base-lambdas {}
+        asts (map #(tp % base-lambdas base-env) defuns)
         all (apply merge (map #(:lambdas %) asts))
         ast-wl (add-lines all)
         out (clojure.string/join "\n" (flatten (map (fn [[_ instr]] [instr]) ast-wl)))]

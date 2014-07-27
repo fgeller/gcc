@@ -14,6 +14,7 @@
       (tp '(car 0) nil nil) => {:result [["LDC 0"] ["CAR"]] :lambdas nil}
       (tp '(cdr 0) nil nil) => {:result [["LDC 0"] ["CDR"]] :lambdas nil}
       (tp '(atom? 0) nil nil) => {:result [["LDC 0"] ["ATOM"]] :lambdas nil}
+      (tp '(cons 1 nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil}
       (cleanup))
 
 (fact "lambda application"
@@ -242,11 +243,11 @@ TAP 3"
                                (fun acc (car lst))
                                fun)))
              (defun reverse (lst)
-               (fold-left lst 0 (lambda (acc next)
-                                        (cons next acc))))
+               (fold-left lst nil (lambda (acc next)
+                                          (cons next acc))))
              (defun map (lst fun)
                (reverse (fold-left lst
-                                   0
+                                   nil
                                    (lambda (acc next)
                                            (cons (fun next) acc)))))))
       => "LD 0 1 ; $lambda-2
