@@ -13,8 +13,8 @@
 
 (def primitives {
                  '= "CEQ"
-                 '< "CLT"
                  '> "CGT"
+                 '>= "CGTE"
                  'cons "CONS"
                  'car "CAR"
                  'cdr "CDR"
