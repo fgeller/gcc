@@ -23,7 +23,10 @@
                  'cons "CONS"
                  'car "CAR"
                  'cdr "CDR"
+                 '+ "ADD"
                  '- "SUB"
+                 '* "MUL"
+                 '/ "DIV"
                  'atom? "ATOM"
                  'dbg "DBUG"
                  })
