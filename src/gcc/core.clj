@@ -148,7 +148,9 @@
            env-with-updated-arg-refs (into {} (map (fn [[name instr]]
                                                      [name (clojure.string/replace instr #"LD (\d+) (\d+)" (fn [[_ frm arg]] (str "LD " (+ 1 (string->number frm)) " " arg)))])
                                                    env))
-           new-env (merge env-with-updated-arg-refs (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args)))
+           new-env (merge env-with-updated-arg-refs
+                          (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args))
+                          {:current-fun name})
            {body-instructions :result body-lams :lambdas} (tp body lambdas new-env)
            lambda-instructions (conj (add-name-to-first-instruction name body-instructions) ["RTN"])
            load-lambda [(str "LDF @" name)]]
@@ -204,17 +206,18 @@
            {right-result :result right-lams :lambdas} (tp right lambdas env)
            right-instructions  (vec right-result)
 
-           tail-call-in-left (and                             ;; hacky hacky
-                              (not (atom? left))
-                              (not (nil? left))
-                              (not (true? left))
-                              (not (var-ref? left env))
-                              (not (undefined-var-ref? p env))
-                              (not (lambda? p))
-                              (not (if? p))
-                              (not (tif? p))
-                              (not (primitive-1? left))
-                              (not (primitive-2? left)))
+           tail-call-in-left (and
+                              (< 1 (count left-instructions))
+                              (re-matches #"AP \d+" (first (last left-instructions)))
+                              (= (:current-fun env) (first (nth left-instructions (- (count left-instructions) 2)))))
+
+           tail-call-in-right (and
+                              (< 1 (count right-instructions))
+                              (re-matches #"AP \d+" (first (last right-instructions)))
+                              (= (:current-fun env) (first (nth right-instructions (- (count right-instructions) 2)))))
+           _ (when-not (or tail-call-in-left tail-call-in-right)
+               (throw (Exception. (str "Couldn't find tail call. current-fun: " (:current-fun env) " Left: " left " Right: " right))))
+
            true-instructions (if tail-call-in-left
                                (let [[l] (last left-instructions)]
                                  `[~@(conj (pop left-instructions) [(str "T" l)])])
@@ -243,7 +246,9 @@
            args (nth p 2)
            body (nth p 3)  ;; just single form bodies
            id (str "LDF @" name) ; todo: need to distinguish between def and defn?
-           new-env (merge env {name id} (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args)))
+           new-env (merge env
+                          (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args))
+                          {:current-fun id name id})
            {body-instructions :result body-lams :lambdas} (tp body lambdas new-env)
            defun-instructions (maybe-add-rtn (add-name-to-first-instruction name body-instructions))
            ]
