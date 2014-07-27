@@ -321,3 +321,33 @@ TAP 3"
       => "LDC 23 ; twenty-three
 RTN"
       (cleanup))
+
+(fact "gcc range"
+      (gcc '((defun range (n)
+               (range-iter n nil))
+             (defun range-iter (count out)
+               (tif (= count 0)
+                    out
+                    (range-iter (- count 1) (cons (- count 1) out))))))
+      => "LD 0 0 ; range-iter
+LDC 0
+CEQ
+TSEL 4 6
+LD 0 1
+RTN
+LD 0 0
+LDC 1
+SUB
+LD 0 0
+LDC 1
+SUB
+LD 0 1
+CONS
+LDF 0
+TAP 2
+LD 0 0 ; range
+LDC 0
+LDF 0
+AP 2
+RTN"
+      (cleanup))
