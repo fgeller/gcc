@@ -74,10 +74,15 @@
      (println "chose var-ref")
      {:result [[(env p)]] :lambdas lambdas})
 
-   (nil? p)
+   (or (nil? p) (false? p))
    (do
-     (println "chose nil")
+     (println "chose nil/false")
      {:result [["LDC 0"]] :lambdas lambdas})
+
+   (true? p)
+   (do
+     (println "chose true")
+     {:result [["LDC 1"]] :lambdas lambdas})
 
    (undefined-var-ref? p env)
    (do

@@ -15,6 +15,8 @@
       (tp '(cdr 0) nil nil) => {:result [["LDC 0"] ["CDR"]] :lambdas nil}
       (tp '(atom? 0) nil nil) => {:result [["LDC 0"] ["ATOM"]] :lambdas nil}
       (tp '(cons 1 nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil}
+      (tp '(cons true nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil}
+      (tp '(cons false nil) nil nil) => {:result [["LDC 0"] ["LDC 0"] ["CONS"]] :lambdas nil}
       (cleanup))
 
 (fact "lambda application"
