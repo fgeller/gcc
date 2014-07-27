@@ -53,6 +53,34 @@
                               ["RTN"]]}}
           (cleanup))
 
+(fact "let body - empty bindings"
+      (tp '(let ()
+             (brk)
+             (- 0 1))
+          nil
+          nil) => {:result  [["LDF @$lambda-1"]]
+                   :lambdas {"$lambda-1"
+                             [["BRK" ["$lambda-1"]]
+                              ["LDC 0"]
+                              ["LDC 1"]
+                              ["SUB"]
+                              ["RTN"]]}}
+          (cleanup))
+
+(fact "let body - with binding"
+      (tp '(let ((i 0))
+             (brk)
+             (- i 1))
+          nil
+          nil) => {:result  [["LDC 0"] ["LDF @$lambda-1"] ["AP 1"]]
+                   :lambdas {"$lambda-1"
+                             [["BRK" ["$lambda-1"]]
+                              ["LD 0 0"]
+                              ["LDC 1"]
+                              ["SUB"]
+                              ["RTN"]]}}
+          (cleanup))
+
 (fact "lambda application"
       (tp '((lambda (i) (- i 1)) 2)
           nil

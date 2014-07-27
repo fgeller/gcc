@@ -171,17 +171,26 @@
    (do
      (println "chose let")
      (let [bindings (nth p 1)
-           body (nth p 2)
-           translated-lambdas (reduce (fn [last next]
-                                        (let [name (first next)
-                                              value-body (second next)
-                                              napp (list (list 'lambda (list name) last) value-body) ;; y no quasiquote / cons?
-                                              ]
-                                          napp
-                                          ))
-                                      body
-                                      (reverse bindings))
+           body (nthrest p 2)
+           reduced-lambdas (first (reduce (fn [last next]
+                                            (let [name (first next)
+                                                  value-body (second next)
+                                                  napp2 (list (reverse (reduce (fn [a b] (conj a b))
+                                                                               (list (list name) 'lambda)
+                                                                               last))
+                                                              value-body)
+                                                  ]
+                                              (list napp2)
+                                              ))
+                                          body
+                                          (reverse bindings)))
+           single-lambda (reverse (reduce (fn [last next]
+                                            (conj last next)) (list (list) 'lambda) body))
+           translated-lambdas (if (= 0 (count bindings))
+                                single-lambda
+                                reduced-lambdas)
            ]
+       (println (format "🎇  rewrote let[%s] to lambda[%s]" p translated-lambdas))
        (tp translated-lambdas lambdas env)))
 
    (if? p)
@@ -309,7 +318,7 @@
        result
        {:result result :lambdas (merge lambdas fun-lams args-lams)}))
 
-   true (println "i dunno how to tp" p)
+   true (println "i dunno how to tp" p "with type" (type p))
    ))
 
 (defn add-lines [lams]
