@@ -167,7 +167,8 @@
 
            tail-call-in-left (and                             ;; hacky hacky
                               (not (var-ref? left env))
-                              (not (primitive-1? left)))
+                              (not (primitive-1? left))
+                              (not (primitive-2? left)))
            true-instructions (if tail-call-in-left
                                (let [[l] (last left-instructions)]
                                  `[~@(conj (pop left-instructions) [(str "T" l)])])
