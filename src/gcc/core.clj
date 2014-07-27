@@ -33,18 +33,18 @@
 
 (defn application? [p env] (and (list? p)))
 
-(defn built-in-mktuple [p lambdas env]
+(defn built-in-mktuple [p lambdas env eval]
   (let [args (rest p)
-        evaluated-args (map (fn [a] (tp a lambdas env)) args)
+        evaluated-args (map (fn [a] (eval a lambdas env)) args)
         args-instructions (vec (apply concat (map (fn [{res :result lams :lambdas}] res) evaluated-args)))
         args-lams (reduce (fn [old {res :result lams :lambdas}] (merge old lams)) {} evaluated-args)
         cons-chain (vec (map (fn [_] ["CONS"]) (pop args-instructions)))
         list-instructions (vec (concat args-instructions cons-chain))]
     {:result list-instructions :lambdas (merge lambdas args-lams)}))
 
-(defn built-in-mklist [p lambdas env]
+(defn built-in-mklist [p lambdas env eval]
   (let [args (rest p)
-        evaluated-args (map (fn [a] (tp a lambdas env)) args)
+        evaluated-args (map (fn [a] (eval a lambdas env)) args)
         args-instructions (vec (apply concat (map (fn [{res :result lams :lambdas}] res) evaluated-args)))
         args-lams (reduce (fn [old {res :result lams :lambdas}] (merge old lams)) {} evaluated-args)
         cons-chain (vec (map (fn [_] ["CONS"]) args-instructions))
@@ -203,7 +203,7 @@
    (built-in-function? p)
    (do
      (println "chose built-in")
-     ((built-in-functions (first p)) p lambdas env))
+     ((built-in-functions (first p)) p lambdas env tp))
 
    (application? p env)
    (do
