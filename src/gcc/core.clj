@@ -236,7 +236,9 @@
                                                  ordered-flattened-lams)
         result (map (fn [[l instr]]
                       (let [num-replaced (clojure.string/replace instr #"@(\d+)" (fn [[_ n]] (str (+ l (string->number n)))))
-                            names-replaced (clojure.string/replace num-replaced #"@(.+)" (fn [[_ n]] (str (names-lines n))))]
+                            names-replaced (clojure.string/replace num-replaced #"@([^ ]+)" (fn [[_ n]]
+                                                                                           (when-not (names-lines n) (throw (Exception. (str "Unknown name: [" n "]"))))
+                                                                                           (str (names-lines n))))]
                         [l names-replaced]))
                     p-ast-with-lines)
 
@@ -259,4 +261,5 @@
         out-file (spit "lambdaman.gcc" out)]
     (println (format "input files:\n====================\n%s\n====================" (clojure.string/join "\n--------------------\n" in)))
     (println (format "output file:\n====================\n%s\n====================" out))
-    (println "wrote output to lambdaman.gcc")))
+    (println "wrote output to lambdaman.gcc")
+    (println "good luck. 🙋")))

@@ -368,3 +368,6 @@ LDC 25 ; y
 RTN
 LDC 23 ; x
 RTN")
+
+(fact "add-lines with missing name"
+      (add-lines {"some-fun" [["LDF @DNE"]]}) => (throws Exception))
