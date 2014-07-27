@@ -84,8 +84,7 @@ LD 0 2
 AP 2
 LD 0 2
 LDF 10
-TAP 3
-RTN"
+TAP 3"
       (cleanup))
 
 (fact "nth"
@@ -109,8 +108,7 @@ RTN"
                                     ["LDC 1"]
                                     ["SUB"]
                                     ["LDF @nth"]
-                                    ["TAP 2"]
-                                    ["RTN"]]}}
+                                    ["TAP 2"]]}}
           (cleanup))
 
 (fact "add-lines to nth"
@@ -135,8 +133,7 @@ RTN"
                               [10 "LDC 1"]
                               [11 "SUB"]
                               [12 "LDF 0"]
-                              [13 "TAP 2"]
-                              [14 "RTN"]]
+                              [13 "TAP 2"]]
         (cleanup))
 
 (fact "gcc nth"
@@ -157,8 +154,7 @@ LD 0 1
 LDC 1
 SUB
 LDF 0
-TAP 2
-RTN"
+TAP 2"
                         (cleanup))
 
 (fact "fold-left"
@@ -185,8 +181,7 @@ RTN"
                               ["AP 2"]
                               ["LD 0 2"]
                               ["LDF @fold-left"]
-                              ["TAP 3"]
-                              ["RTN"]]}}
+                              ["TAP 3"]]}}
           (cleanup))
 
 
@@ -211,8 +206,7 @@ LD 0 2
 AP 2
 LD 0 2
 LDF 0
-TAP 3
-RTN"
+TAP 3"
       (cleanup))
 
 (fact "map"

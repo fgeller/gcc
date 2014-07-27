@@ -2,8 +2,9 @@
   (:require [clojure.java.io :as io]))
 
 ;; TODO nil
-;; TODO TAP / RTN fix
+;; DONE TAP / RTN fix
 ;; DONE env passing for lambdas
+;; TODO automatic main insertion?
 
 (def atom? number?)
 (defn quote? [p] (= 'quote (first p)))
@@ -48,6 +49,11 @@
         remaining-instructions (rest instructions)]
     `[~[first-instruction (vec (conj names (str name)))] ~@remaining-instructions]))
 
+(defn maybe-add-rtn [instructions]
+  (let [[last-instruction _] (last instructions)
+        is-tap (re-matches #"TAP \d+" last-instruction)]
+    (if is-tap instructions
+        (conj instructions ["RTN"]))))
 
 (defn tp [p lambdas env] ; => {:result [[]] :lambdas {:l1 [[]]}}
   (println (format "tp p[%s] lambdas[%s] env[%s]" p lambdas env))
@@ -149,7 +155,7 @@
            id (str "LDF @" name) ; todo: need to distinguish between def and defn?
            new-env (merge env {name id} (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args)))
            {body-instructions :result body-lams :lambdas} (tp body lambdas new-env)
-           defun-instructions (conj (add-name-to-first-instruction name body-instructions) ["RTN"])
+           defun-instructions (maybe-add-rtn (add-name-to-first-instruction name body-instructions))
            ]
        {:result nil :lambdas (merge lambdas body-lams {(str name) defun-instructions})}
        ))
