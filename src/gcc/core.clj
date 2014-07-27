@@ -309,7 +309,7 @@
   (let [in  (apply concat (map (fn [f] (read-string (slurp f))) args))
         out (gcc in)
         out-file (spit "lambdaman.gcc" out)]
-    (println (format "input files:\n====================\n%s\n====================" (clojure.string/join "\n--------------------\n" in)))
-    (println (format "output file:\n====================\n%s\n====================" out))
+    (println (format "input:\n====================\n%s\n====================" (clojure.string/join "\n--------------------\n" in)))
+    (println (format "output:\n====================\n%s\n====================" out))
     (println "wrote output to lambdaman.gcc")
     (println "good luck. 🙋")))
