@@ -205,7 +205,14 @@
            right-instructions  (vec right-result)
 
            tail-call-in-left (and                             ;; hacky hacky
+                              (not (atom? left))
+                              (not (nil? left))
+                              (not (true? left))
                               (not (var-ref? left env))
+                              (not (undefined-var-ref? p env))
+                              (not (lambda? p))
+                              (not (if? p))
+                              (not (tif? p))
                               (not (primitive-1? left))
                               (not (primitive-2? left)))
            true-instructions (if tail-call-in-left
