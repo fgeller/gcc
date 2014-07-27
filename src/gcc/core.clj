@@ -196,14 +196,15 @@
    ))
 
 (defn add-lines [lams]
-  (let [flattened-lams (vec (apply concat (vals lams)))
+  (let [main-fun (lams "main")
+        ordered-flattened-lams (vec (apply concat (cons main-fun (vals (dissoc lams "main")))))
         [_ p-ast-with-lines names-lines] (reduce (fn [[l p m] [instr names]]
                                                    (if names
                                                      [(+ 1 l) (conj p [l (str instr " ; " (clojure.string/join ", " names))]) (merge m (into {} (map (fn [n] {n l}) names)))]
                                                      [(+ 1 l) (conj p [l instr]) m]
                                                      ))
                                                  [0 [] {}]
-                                                 flattened-lams)
+                                                 ordered-flattened-lams)
         result (map (fn [[l instr]]
                       (let [num-replaced (clojure.string/replace instr #"@(\d+)" (fn [[_ n]] (str (+ l (string->number n)))))
                             names-replaced (clojure.string/replace num-replaced #"@(.+)" (fn [[_ n]] (str (names-lines n))))]

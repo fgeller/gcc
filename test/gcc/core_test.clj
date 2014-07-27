@@ -352,3 +352,15 @@ LDF 0
 AP 2
 RTN"
       (cleanup))
+
+(fact "gcc with main"
+      (gcc '((defun x () 23)
+             (defun main () 24)
+             (defun y () 25)))
+      =>
+      "LDC 24 ; main
+RTN
+LDC 25 ; y
+RTN
+LDC 23 ; x
+RTN")
