@@ -24,8 +24,10 @@
                  '/ "DIV"
                  'atom? "ATOM"
                  'dbg "DBUG"
+                 'brk "BRK"
                  })
 
+(defn primitive-0? [p] (and (list? p) (= 1 (count p)) (some #(= % (first p)) (keys primitives))))
 (defn primitive-1? [p] (and (list? p) (= 2 (count p)) (some #(= % (first p)) (keys primitives))))
 (defn primitive-2? [p] (and (list? p) (= 3 (count p)) (some #(= % (first p)) (keys primitives))))
 
@@ -119,6 +121,12 @@
    (do
      (println "🙀  chose undefined var-ref for" p)
      {:result [[(str "LDF @" p)]] :lambdas lambdas})
+
+   (primitive-0? p)
+   (do
+     (println "chose primitive-0")
+     (let [command (primitives (nth p 0))]
+       {:result `[~[command]] :lambdas lambdas}))
 
    (primitive-1? p)
    (do

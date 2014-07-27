@@ -14,6 +14,7 @@
       (tp '(car 0) nil nil) => {:result [["LDC 0"] ["CAR"]] :lambdas nil}
       (tp '(cdr 0) nil nil) => {:result [["LDC 0"] ["CDR"]] :lambdas nil}
       (tp '(dbg 0) nil nil) => {:result [["LDC 0"] ["DBUG"]] :lambdas nil}
+      (tp '(brk) nil nil) => {:result [["BRK"]] :lambdas nil}
       (tp '(atom? 0) nil nil) => {:result [["LDC 0"] ["ATOM"]] :lambdas nil}
       (tp '(cons 1 nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil}
       (tp '(cons true nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil}
