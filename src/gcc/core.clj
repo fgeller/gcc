@@ -41,7 +41,7 @@
         evaluated-args (map (fn [a] (eval a lambdas env)) args)
         args-instructions (vec (apply concat (map (fn [{res :result lams :lambdas}] res) evaluated-args)))
         args-lams (reduce (fn [old {res :result lams :lambdas}] (merge old lams)) {} evaluated-args)
-        cons-chain (vec (map (fn [_] ["CONS"]) (pop args-instructions)))
+        cons-chain (vec (map (fn [_] ["CONS"]) (pop args)))
         list-instructions (vec (concat args-instructions cons-chain))]
     {:result list-instructions :lambdas (merge lambdas args-lams)}))
 
@@ -50,7 +50,7 @@
         evaluated-args (map (fn [a] (eval a lambdas env)) args)
         args-instructions (vec (apply concat (map (fn [{res :result lams :lambdas}] res) evaluated-args)))
         args-lams (reduce (fn [old {res :result lams :lambdas}] (merge old lams)) {} evaluated-args)
-        cons-chain (vec (map (fn [_] ["CONS"]) args-instructions))
+        cons-chain (vec (map (fn [_] ["CONS"]) args))
         list-instructions (vec (concat (conj args-instructions ["LDC 0"]) cons-chain))]
        {:result list-instructions :lambdas (merge lambdas args-lams)}))
 
