@@ -290,3 +290,32 @@ LD 0 2
 LDF 24
 TAP 3"
       (cleanup))
+
+; (mk-list 5 23 nil) => '(23 23 23 23 23)
+(fact "gcc mk-list"
+      (gcc '((defun mk-list (size value lst)
+               (tif (= size 0)
+                    lst
+                    (mk-list (- size 1) value (cons value lst))))))
+      => "LD 0 0 ; mk-list
+LDC 0
+CEQ
+TSEL 4 6
+LD 0 2
+RTN
+LD 0 0
+LDC 1
+SUB
+LD 0 1
+LD 0 1
+LD 0 2
+CONS
+LDF 0
+TAP 3"
+      (cleanup))
+
+(fact "gcc single value defun"
+      (gcc '((defun twenty-three () 23)))
+      => "LDC 23 ; twenty-three
+RTN"
+      (cleanup))
