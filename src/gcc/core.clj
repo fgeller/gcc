@@ -25,6 +25,7 @@
                  'cdr "CDR"
                  '- "SUB"
                  'atom? "ATOM"
+                 'dbg "DBUG"
                  })
 
 (defn primitive-1? [p] (and (list? p) (= 2 (count p)) (some #(= % (first p)) (keys primitives))))
