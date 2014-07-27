@@ -2,11 +2,6 @@
   (:require [clojure.java.io :as io])
   (:gen-class :main true))
 
-;; DONE nil
-;; DONE TAP / RTN fix
-;; DONE env passing for lambdas
-;; TODO automatic main insertion?
-
 (defn string->number [str]
   (let [n (read-string str)]
        (if (number? n) n nil)))
