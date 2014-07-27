@@ -25,6 +25,34 @@
       (tp '(mklist 1 2 3 4) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["LDC 3"] ["LDC 4"] ["LDC 0"] ["CONS"] ["CONS"] ["CONS"] ["CONS"]] :lambdas {}}
       (cleanup))
 
+(fact "lambda body"
+      (tp '(lambda (i)
+                   (brk)
+                   (- i 1))
+          nil
+          nil) => {:result  [["LDF @$lambda-1"]]
+                   :lambdas {"$lambda-1"
+                             [["BRK" ["$lambda-1"]]
+                              ["LD 0 0"]
+                              ["LDC 1"]
+                              ["SUB"]
+                              ["RTN"]]}}
+          (cleanup))
+
+(fact "defun body"
+      (tp '(defun x (i)
+                   (brk)
+                   (- i 1))
+          nil
+          nil) => {:result nil
+                   :lambdas {"x"
+                             [["BRK" ["x"]]
+                              ["LD 0 0"]
+                              ["LDC 1"]
+                              ["SUB"]
+                              ["RTN"]]}}
+          (cleanup))
+
 (fact "lambda application"
       (tp '((lambda (i) (- i 1)) 2)
           nil

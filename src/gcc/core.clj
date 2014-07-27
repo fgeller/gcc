@@ -149,7 +149,8 @@
      (println "chose lambda")
      (swap! lambda-counter #(+ 1 %))
      (let [args (nth p 1)
-           body (nth p 2)
+           bodyrest (nthrest p 2)
+
            name (str "$lambda-" @lambda-counter)
            env-with-updated-arg-refs (into {} (map (fn [[name instr]]
                                                      [name (clojure.string/replace instr #"LD (\d+) (\d+)" (fn [[_ frm arg]] (str "LD " (+ 1 (string->number frm)) " " arg)))])
@@ -157,7 +158,11 @@
            new-env (merge env-with-updated-arg-refs
                           (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args))
                           {:current-fun name})
-           {body-instructions :result body-lams :lambdas} (tp body lambdas new-env)
+
+           evaluated-bodies (map (fn [a] (tp a lambdas new-env)) bodyrest)
+           body-instructions (vec (apply concat (map (fn [{res :result lams :lambdas}] res) evaluated-bodies)))
+           body-lams (reduce (fn [old {res :result lams :lambdas}] (merge old lams)) {} evaluated-bodies)
+
            lambda-instructions (conj (add-name-to-first-instruction name body-instructions) ["RTN"])
            load-lambda [(str "LDF @" name)]]
        {:result [load-lambda] :lambdas (merge lambdas {name lambda-instructions} body-lams)}))
@@ -267,12 +272,17 @@
      (println "chose defun")
      (let [name (nth p 1)
            args (nth p 2)
-           body (nth p 3)  ;; just single form bodies
+           bodyrest (nthrest p 3)
+
            id (str "LDF @" name) ; todo: need to distinguish between def and defn?
            new-env (merge env
                           (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args))
                           {:current-fun id name id})
-           {body-instructions :result body-lams :lambdas} (tp body lambdas new-env)
+
+           evaluated-bodies (map (fn [a] (tp a lambdas new-env)) bodyrest)
+           body-instructions (vec (apply concat (map (fn [{res :result lams :lambdas}] res) evaluated-bodies)))
+           body-lams (reduce (fn [old {res :result lams :lambdas}] (merge old lams)) {} evaluated-bodies)
+
            defun-instructions (maybe-add-rtn (add-name-to-first-instruction name body-instructions))
            ]
        {:result nil :lambdas (merge lambdas body-lams {(str name) defun-instructions})}
