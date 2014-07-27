@@ -31,23 +31,22 @@
 
 (defn application? [p env] (and (list? p)))
 
-(defn built-in-mktuple [p lambdas env eval]
+(defn built-in-list-tuple [p lambdas env eval is-list]
   (let [args (rest p)
         evaluated-args (map (fn [a] (eval a lambdas env)) args)
         args-instructions (vec (apply concat (map (fn [{res :result lams :lambdas}] res) evaluated-args)))
         args-lams (reduce (fn [old {res :result lams :lambdas}] (merge old lams)) {} evaluated-args)
-        cons-chain (vec (map (fn [_] ["CONS"]) (pop args)))
-        list-instructions (vec (concat args-instructions cons-chain))]
+        cons-chain (vec (map (fn [_] ["CONS"]) (if is-list args (pop args))))
+        list-instructions (vec (concat (if is-list
+                                         (conj args-instructions ["LDC 0"])
+                                         args-instructions) cons-chain))]
     {:result list-instructions :lambdas (merge lambdas args-lams)}))
 
+(defn built-in-mktuple [p lambdas env eval]
+  (built-in-list-tuple p lambdas env eval false))
+
 (defn built-in-mklist [p lambdas env eval]
-  (let [args (rest p)
-        evaluated-args (map (fn [a] (eval a lambdas env)) args)
-        args-instructions (vec (apply concat (map (fn [{res :result lams :lambdas}] res) evaluated-args)))
-        args-lams (reduce (fn [old {res :result lams :lambdas}] (merge old lams)) {} evaluated-args)
-        cons-chain (vec (map (fn [_] ["CONS"]) args))
-        list-instructions (vec (concat (conj args-instructions ["LDC 0"]) cons-chain))]
-       {:result list-instructions :lambdas (merge lambdas args-lams)}))
+  (built-in-list-tuple p lambdas env eval true))
 
 (def built-in-functions {
                          'mklist built-in-mklist
