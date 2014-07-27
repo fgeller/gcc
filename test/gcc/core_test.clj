@@ -421,3 +421,27 @@ RTN")
                 ["LDF @f3"]
                 ["AP 2"]
                 ["RTN"]] :lambdas {}})
+
+(fact "let"
+      (tp '(let ((x 1)
+                 (y (- x 1)))
+             (+ x y))
+          {}
+          {})
+      =>
+      {:result [["LDC 1"]
+                ["LDF @$lambda-1"]
+                ["AP 1"]]
+       :lambdas {"$lambda-1"
+                  [["LD 0 0" ["$lambda-1"]]
+                   ["LDC 1"]
+                   ["SUB"]
+                   ["LDF @$lambda-2"]
+                   ["AP 1"]
+                   ["RTN"]]
+                  "$lambda-2"
+                  [["LD 1 0" ["$lambda-2"]]
+                   ["LD 0 0"]
+                   ["ADD"]
+                   ["RTN"]]}}
+      (cleanup))

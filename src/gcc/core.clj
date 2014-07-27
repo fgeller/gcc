@@ -74,6 +74,10 @@
 (defn var-ref? [p env]
   (and (symbol? p) (find env p)))
 
+(defn let? [p]
+  (and (list? p)
+       (= 'let (first p))))
+
 (defn undefined-var-ref? [p env]
   (and (symbol? p) (not (find env p))))
 
@@ -150,6 +154,23 @@
            lambda-instructions (conj (add-name-to-first-instruction name body-instructions) ["RTN"])
            load-lambda [(str "LDF @" name)]]
        {:result [load-lambda] :lambdas (merge lambdas {name lambda-instructions} body-lams)}))
+
+   (let? p)
+   (do
+     (println "chose let")
+     (let [bindings (nth p 1)
+           body (nth p 2)
+           translated-lambdas (reduce (fn [last next]
+                                        (let [name (first next)
+                                              value-body (second next)
+                                              napp (list (list 'lambda (list name) last) value-body) ;; y no quasiquote / cons?
+                                              ]
+                                          napp
+                                          ))
+                                      body
+                                      (reverse bindings))
+           ]
+       (tp translated-lambdas lambdas env)))
 
    (if? p)
    (do
