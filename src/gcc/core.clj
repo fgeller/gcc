@@ -1,5 +1,6 @@
 (ns gcc.core
-  (:require [clojure.java.io :as io]))
+  (:require [clojure.java.io :as io])
+  (:gen-class :main true))
 
 ;; DONE nil
 ;; DONE TAP / RTN fix
@@ -215,3 +216,11 @@
         out (clojure.string/join "\n" (flatten (map (fn [[_ instr]] [instr]) ast-wl)))]
     out
     ))
+
+(defn -main [& args]
+  (let [in  (apply concat (map (fn [f] (read-string (slurp f))) args))
+        out (gcc in)
+        out-file (spit "lambdaman.gcc" out)]
+    (println (format "input files:\n====================\n%s\n====================" (clojure.string/join "\n--------------------\n" in)))
+    (println (format "output file:\n====================\n%s\n====================" out))
+    (println "wrote output to lambdaman.gcc")))
