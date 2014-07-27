@@ -187,7 +187,7 @@
   (let [flattened-lams (vec (apply concat (vals lams)))
         [_ p-ast-with-lines names-lines] (reduce (fn [[l p m] [instr names]]
                                                    (if names
-                                                     [(+ 1 l) (conj p [l instr]) (merge m (into {} (map (fn [n] {n l}) names)))]
+                                                     [(+ 1 l) (conj p [l (str instr " ; " (clojure.string/join ", " names))]) (merge m (into {} (map (fn [n] {n l}) names)))]
                                                      [(+ 1 l) (conj p [l instr]) m]
                                                      ))
                                                  [0 [] {}]

@@ -60,17 +60,17 @@
                                         (cons next acc))))))
       =>
       ;; lambda-1 reverse fold-left
-"LD 0 1
+"LD 0 1 ; $lambda-1
 LD 0 0
 CONS
 RTN
-LD 0 0
+LD 0 0 ; reverse
 LDC 0
 LDF 0
 LDF 10
 AP 3
 RTN
-LD 0 0
+LD 0 0 ; fold-left
 ATOM
 TSEL 13 15
 LD 0 1
@@ -120,7 +120,7 @@ TAP 3"
                      nil
                      nil)
             lams (:lambdas past)]
-        (add-lines lams)) => [[0 "LD 0 1"]
+        (add-lines lams)) => [[0 "LD 0 1 ; nth"]
                               [1 "LDC 0"]
                               [2 "CEQ"]
                               [3 "TSEL 4 7"]
@@ -141,7 +141,7 @@ TAP 3"
                (tif (= i 0)
                     (car lst)
                     (nth (cdr lst)
-                         (- i 1)))))) => "LD 0 1
+                         (- i 1)))))) => "LD 0 1 ; nth
 LDC 0
 CEQ
 TSEL 4 7
@@ -192,7 +192,7 @@ TAP 2"
                     (fold-left (cdr lst)
                                (fun acc (car lst))
                                fun)))))
-      => "LD 0 0
+      => "LD 0 0 ; fold-left
 ATOM
 TSEL 3 5
 LD 0 1
@@ -232,4 +232,60 @@ TAP 3"
                                  ["LD 0 0"]
                                  ["CONS"]
                                  ["RTN"]]}}
+      (cleanup))
+
+(fact "gcc map"
+      (gcc '((defun fold-left (lst acc fun)
+               (tif (atom? lst)
+                    acc
+                    (fold-left (cdr lst)
+                               (fun acc (car lst))
+                               fun)))
+             (defun reverse (lst)
+               (fold-left lst 0 (lambda (acc next)
+                                        (cons next acc))))
+             (defun map (lst fun)
+               (reverse (fold-left lst
+                                   0
+                                   (lambda (acc next)
+                                           (cons (fun next) acc)))))))
+      => "LD 0 1 ; $lambda-2
+LD 1 1
+AP 1
+LD 0 0
+CONS
+RTN
+LD 0 0 ; map
+LDC 0
+LDF 0
+LDF 24
+AP 3
+LDF 18
+AP 1
+RTN
+LD 0 1 ; $lambda-1
+LD 0 0
+CONS
+RTN
+LD 0 0 ; reverse
+LDC 0
+LDF 14
+LDF 24
+AP 3
+RTN
+LD 0 0 ; fold-left
+ATOM
+TSEL 27 29
+LD 0 1
+RTN
+LD 0 0
+CDR
+LD 0 1
+LD 0 0
+CAR
+LD 0 2
+AP 2
+LD 0 2
+LDF 24
+TAP 3"
       (cleanup))
