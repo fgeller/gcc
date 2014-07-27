@@ -6,6 +6,10 @@
 ;; DONE env passing for lambdas
 ;; TODO automatic main insertion?
 
+(defn string->number [str]
+  (let [n (read-string str)]
+       (if (number? n) n nil)))
+
 (def atom? number?)
 (defn quote? [p] (= 'quote (first p)))
 
@@ -179,10 +183,6 @@
    true (println "i dunno how to tp" p)
    ))
 
-(defn string->number [str]
-  (let [n (read-string str)]
-       (if (number? n) n nil)))
-
 (defn add-lines [lams]
   (let [flattened-lams (vec (apply concat (vals lams)))
         [_ p-ast-with-lines names-lines] (reduce (fn [[l p m] [instr names]]
@@ -201,14 +201,10 @@
         ]
     (vec result)))
 
-(defn flatten-funs [funs]
-  funs)
-
 (defn gcc [defuns]
   (let [asts (map #(tp % nil nil) defuns) ;; ({:result nil :lambdas {"a" 23}} {:result nil :lambdas {"a" 23}})
         all (apply merge (map #(:lambdas %) asts))
         ast-wl (add-lines all)
-        out (clojure.string/join "\n" (flatten (map (fn [[_ instr]] [instr]) ast-wl)))
-        ]
+        out (clojure.string/join "\n" (flatten (map (fn [[_ instr]] [instr]) ast-wl)))]
     out
     ))
