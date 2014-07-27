@@ -69,7 +69,12 @@
        (= 'lambda (first p))))
 
 (defn tif? [p]
-  (= 'tif (first p)))
+  (and (list? p)
+       (= 'tif (first p))))
+
+(defn if? [p]
+  (and  (list? p)
+        (= 'if (first p))))
 
 (defn var-ref? [p env]
   (and (symbol? p) (find env p)))
@@ -149,6 +154,40 @@
            load-lambda [(str "LDF @" name)]]
        {:result [load-lambda] :lambdas (merge lambdas {name lambda-instructions} body-lams)}))
 
+   (if? p)
+   (do
+     (println "chose if")
+     (let [pred (nth p 1)
+           left (nth p 2)
+           right (nth p 3)
+           {pred-result :result pred-lams :lambdas} (tp pred lambdas env)
+           pred-instructions (vec pred-result)
+
+           {left-result :result left-lams :lambdas} (tp left lambdas env)
+           left-instructions  (vec left-result)
+
+           {right-result :result right-lams :lambdas} (tp right lambdas env)
+           right-instructions  (vec right-result)
+
+           true-instructions `[~@left-instructions ["RTN"]]
+           false-instructions `[~@right-instructions ["RTN"]]
+
+           true-offset 1
+           false-offset (+ 1 (count true-instructions))
+           ]
+       {
+        :result `[~@pred-instructions
+                  ~[(str "TSEL @" true-offset " @" false-offset)]
+                  ~@true-instructions
+                  ~@false-instructions]
+        :lambdas (merge lambdas pred-lams left-lams right-lams)
+        }
+       ))
+   ;; (if? p)
+   ;; (do
+   ;;   (println "chose if")
+   ;;   (let []
+   ;;     {:result [] :lambdas lambdas}))
 
    (tif? p)
    (do

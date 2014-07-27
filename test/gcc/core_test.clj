@@ -371,3 +371,53 @@ RTN")
 
 (fact "add-lines with missing name"
       (add-lines {"some-fun" [["LDF @DNE"]]}) => (throws Exception))
+
+(fact "mklists"
+      (gcc '((defun x ()
+               (mklist (mklist 1 2)))))
+      => "LDC 1 ; x
+LDC 2
+LDC 0
+CONS
+CONS
+LDC 0
+CONS
+RTN")
+
+;; (fact "gcc ifs"
+;;       (gcc '((defun blub ()
+;;                (+ (if 0 1 2) (if 3 4 5)))))
+;;       =>
+;;       "LDC 0 ; blub
+;; SEL 6 8
+;; LDC 3
+;; SEL 10 12
+;; ADD
+;; RTN
+;; LDC 1
+;; JOIN
+;; LDC 2
+;; JOIN
+;; LDC 4
+;; JOIN
+;; LDC 5
+;; JOIN")
+
+; hackyness
+(fact "if"
+      (tp '(if 0 (f1 (f2 x) y) (f3 a b)) {} {})
+      =>
+      {:result [["LDC 0"]
+                ["TSEL @1 @8"]
+                ["LDF @x"]
+                ["LDF @f2"]
+                ["AP 1"]
+                ["LDF @y"]
+                ["LDF @f1"]
+                ["AP 2"]
+                ["RTN"]
+                ["LDF @a"]
+                ["LDF @b"]
+                ["LDF @f3"]
+                ["AP 2"]
+                ["RTN"]] :lambdas {}})
