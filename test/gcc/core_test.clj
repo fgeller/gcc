@@ -3,26 +3,28 @@
         midje.sweet)
   (:require [clojure.test :refer :all]))
 
-(defn cleanup [] (swap! lambda-counter (fn [_] 0)))
+(defn cleanup []
+  (swap! lambda-counter (fn [_] 0))
+  (swap! branch-counter (fn [_] 0)))
 
 (fact "basics"
-      (to-instruction-ast 1 nil nil) => {:result  [["LDC 1"]] :lambdas nil}
-      (to-instruction-ast '(= 1 0) nil nil) => {:result  [["LDC 1"] ["LDC 0"] ["CEQ"]] :lambdas nil}
-      (to-instruction-ast '(> 1 0) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CGT"]] :lambdas nil}
-      (to-instruction-ast '(car 0) nil nil) => {:result [["LDC 0"] ["CAR"]] :lambdas nil}
-      (to-instruction-ast '(cons 1 2) nil nil) => {:result [["LDC 1"] ["LDC 2"] ["CONS"]] :lambdas nil}
-      (to-instruction-ast '(car 0) nil nil) => {:result [["LDC 0"] ["CAR"]] :lambdas nil}
-      (to-instruction-ast '(cdr 0) nil nil) => {:result [["LDC 0"] ["CDR"]] :lambdas nil}
-      (to-instruction-ast '(dbg 0) nil nil) => {:result [["LDC 0"] ["DBUG"]] :lambdas nil}
-      (to-instruction-ast '(brk) nil nil) => {:result [["BRK"]] :lambdas nil}
-      (to-instruction-ast '(atom? 0) nil nil) => {:result [["LDC 0"] ["ATOM"]] :lambdas nil}
-      (to-instruction-ast '(cons 1 nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil}
-      (to-instruction-ast '(cons true nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil}
-      (to-instruction-ast '(cons false nil) nil nil) => {:result [["LDC 0"] ["LDC 0"] ["CONS"]] :lambdas nil}
-      (to-instruction-ast '(mktuple 1 2) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["CONS"]] :lambdas {}}
-      (to-instruction-ast '(mktuple 1 2 3 4) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["LDC 3"] ["LDC 4"] ["CONS"] ["CONS"] ["CONS"]] :lambdas {}}
-      (to-instruction-ast '(mklist 1) {} {}) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas {}}
-      (to-instruction-ast '(mklist 1 2 3 4) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["LDC 3"] ["LDC 4"] ["LDC 0"] ["CONS"] ["CONS"] ["CONS"] ["CONS"]] :lambdas {}}
+      (to-instruction-ast 1 nil nil) => {:result  [["LDC 1"]] :lambdas nil :branches {}}
+      (to-instruction-ast '(= 1 0) nil nil) => {:result  [["LDC 1"] ["LDC 0"] ["CEQ"]] :lambdas nil :branches {}}
+      (to-instruction-ast '(> 1 0) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CGT"]] :lambdas nil :branches {}}
+      (to-instruction-ast '(car 0) nil nil) => {:result [["LDC 0"] ["CAR"]] :lambdas nil :branches {}}
+      (to-instruction-ast '(cons 1 2) nil nil) => {:result [["LDC 1"] ["LDC 2"] ["CONS"]] :lambdas nil :branches {}}
+      (to-instruction-ast '(car 0) nil nil) => {:result [["LDC 0"] ["CAR"]] :lambdas nil :branches {}}
+      (to-instruction-ast '(cdr 0) nil nil) => {:result [["LDC 0"] ["CDR"]] :lambdas nil :branches {}}
+      (to-instruction-ast '(dbg 0) nil nil) => {:result [["LDC 0"] ["DBUG"]] :lambdas nil :branches {}}
+      (to-instruction-ast '(brk) nil nil) => {:result [["BRK"]] :lambdas nil :branches {}}
+      (to-instruction-ast '(atom? 0) nil nil) => {:result [["LDC 0"] ["ATOM"]] :lambdas nil :branches {}}
+      (to-instruction-ast '(cons 1 nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil :branches {}}
+      (to-instruction-ast '(cons true nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil :branches {}}
+      (to-instruction-ast '(cons false nil) nil nil) => {:result [["LDC 0"] ["LDC 0"] ["CONS"]] :lambdas nil :branches {}}
+      (to-instruction-ast '(mktuple 1 2) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["CONS"]] :lambdas {} :branches {}}
+      (to-instruction-ast '(mktuple 1 2 3 4) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["LDC 3"] ["LDC 4"] ["CONS"] ["CONS"] ["CONS"]] :lambdas {} :branches {}}
+      (to-instruction-ast '(mklist 1) {} {}) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas {} :branches {}}
+      (to-instruction-ast '(mklist 1 2 3 4) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["LDC 3"] ["LDC 4"] ["LDC 0"] ["CONS"] ["CONS"] ["CONS"] ["CONS"]] :lambdas {} :branches {}}
       (cleanup))
 
 (fact "lambda body"
@@ -36,7 +38,9 @@
                               ["LD 0 0"]
                               ["LDC 1"]
                               ["SUB"]
-                              ["RTN"]]}}
+                              ["RTN"]]}
+                   :branches {}
+                   }
           (cleanup))
 
 (fact "defun body"
@@ -50,7 +54,8 @@
                               ["LD 0 0"]
                               ["LDC 1"]
                               ["SUB"]
-                              ["RTN"]]}}
+                              ["RTN"]]}
+                   :branches {}}
           (cleanup))
 
 (fact "let body - empty bindings"
@@ -64,7 +69,8 @@
                               ["LDC 0"]
                               ["LDC 1"]
                               ["SUB"]
-                              ["RTN"]]}}
+                              ["RTN"]]}
+                   :branches {}}
           (cleanup))
 
 (fact "let body - with binding"
@@ -78,7 +84,8 @@
                               ["LD 0 0"]
                               ["LDC 1"]
                               ["SUB"]
-                              ["RTN"]]}}
+                              ["RTN"]]}
+                   :branches {}}
           (cleanup))
 
 (fact "lambda application"
@@ -91,7 +98,8 @@
                              [["LD 0 0" ["$lambda-1"]]
                               ["LDC 1"]
                               ["SUB"]
-                              ["RTN"]]}}
+                              ["RTN"]]}
+                   :branches {}}
       (cleanup))
 
 (fact "reverse"
@@ -100,6 +108,7 @@
                                       (cons next acc))))
           nil
           nil) => {:result nil
+                   :branches {}
                    :lambdas {
                              "reverse" [["LD 0 0" ["reverse"]]
                                         ["LDC 0"]
@@ -160,6 +169,7 @@ TAP 3"
                        (- i 1))))
           nil
           nil) => {:result nil
+                   :branches {}
                    :lambdas {"nth" [["LD 0 1" ["nth"]]
                                     ["LDC 0"]
                                     ["CEQ"]
@@ -231,6 +241,7 @@ TAP 2"
                              fun)))
           nil
           nil) => {:result nil
+                   :branches {}
                    :lambdas {"fold-left"
                              [["LD 0 0" ["fold-left"]]
                               ["ATOM"]
@@ -283,6 +294,7 @@ TAP 3"
           nil
           nil)
       => {:result nil
+          :branches {}
           :lambdas {"map" [["LD 0 0" ["map"]]
                            ["LDC 0"]
                            ["LDF @$lambda-1"]
@@ -424,7 +436,8 @@ RTN
 LDC 25 ; y
 RTN
 LDC 23 ; x
-RTN")
+RTN"
+(cleanup))
 
 (fact "add-lines with missing name"
       (add-lines {"some-fun" [["LDF @DNE"]]}) => (throws Exception))
@@ -439,45 +452,47 @@ CONS
 CONS
 LDC 0
 CONS
-RTN")
+RTN"
+(cleanup))
 
-;; (fact "gcc ifs"
-;;       (gcc '((defun blub ()
-;;                (+ (if 0 1 2) (if 3 4 5)))))
-;;       =>
-;;       "LDC 0 ; blub
-;; SEL 6 8
-;; LDC 3
-;; SEL 10 12
-;; ADD
-;; RTN
-;; LDC 1
-;; JOIN
-;; LDC 2
-;; JOIN
-;; LDC 4
-;; JOIN
-;; LDC 5
-;; JOIN")
-
-; hackyness
-(fact "if"
-      (to-instruction-ast '(if 0 (f1 (f2 x) y) (f3 a b)) {} {})
+(fact "gcc ifs"
+      (gcc '((defun blub ()
+               (+ (if 0 1 2) (if 3 4 5)))))
       =>
-      {:result [["LDC 0"]
-                ["TSEL @1 @8"]
-                ["LDF @x"]
-                ["LDF @f2"]
-                ["AP 1"]
-                ["LDF @y"]
-                ["LDF @f1"]
-                ["AP 2"]
-                ["RTN"]
-                ["LDF @a"]
-                ["LDF @b"]
-                ["LDF @f3"]
-                ["AP 2"]
-                ["RTN"]] :lambdas {}})
+      "LDC 0 ; blub
+SEL 6 8
+LDC 3
+SEL 12 10
+ADD
+RTN
+LDC 1 ; $blub-left-branch-1
+JOIN
+LDC 2 ; $blub-right-branch-2
+JOIN
+LDC 5 ; $blub-right-branch-4
+JOIN
+LDC 4 ; $blub-left-branch-3
+JOIN"
+      (cleanup))
+
+;; ; hackyness
+;; (fact "if"
+;;       (to-instruction-ast '(if 0 (f1 (f2 x) y) (f3 a b)) {} {})
+;;       =>
+;;       {:result [["LDC 0"]
+;;                 ["TSEL @1 @8"]
+;;                 ["LDF @x"]
+;;                 ["LDF @f2"]
+;;                 ["AP 1"]
+;;                 ["LDF @y"]
+;;                 ["LDF @f1"]
+;;                 ["AP 2"]
+;;                 ["RTN"]
+;;                 ["LDF @a"]
+;;                 ["LDF @b"]
+;;                 ["LDF @f3"]
+;;                 ["AP 2"]
+;;                 ["RTN"]] :lambdas {}})
 
 (fact "let"
       (to-instruction-ast '(let ((x 1)
@@ -500,5 +515,6 @@ RTN")
                   [["LD 1 0" ["$lambda-2"]]
                    ["LD 0 0"]
                    ["ADD"]
-                   ["RTN"]]}}
+                   ["RTN"]]}
+       :branches {}}
       (cleanup))
