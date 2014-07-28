@@ -112,4 +112,5 @@ Run tests for hacking:
 ## License
 
 No restrictions.
+
 This was written for the very fun ICFP Contest 2014, if this can be of any help to you -- happy hacking!
