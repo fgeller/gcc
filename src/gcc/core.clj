@@ -94,7 +94,7 @@
         (conj instructions ["RTN"]))))
 
 (defn to-instruction-ast [p lambdas env]
-  (println (format "to-instruction-ast p[%s] lambdas[%s] env[%s]" p lambdas env))
+  ;; (println (format "to-instruction-ast p[%s] lambdas[%s] env[%s]" p lambdas env))
 
   (cond
    (atom? p)
