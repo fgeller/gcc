@@ -28,9 +28,11 @@
                  'brk "BRK"
                  })
 
-(defn primitive-0? [p] (and (list? p) (= 1 (count p)) (some #(= % (first p)) (keys primitives))))
-(defn primitive-1? [p] (and (list? p) (= 2 (count p)) (some #(= % (first p)) (keys primitives))))
-(defn primitive-2? [p] (and (list? p) (= 3 (count p)) (some #(= % (first p)) (keys primitives))))
+(defn primitive? [p]
+  (and
+   (list? p)
+   (some #(= % (count p)) '(1 2 3))
+   (some #(= % (first p)) (keys primitives))))
 
 (defn application? [p env] (and (list? p)))
 
@@ -135,36 +137,27 @@
      ;; (println "🙀  chose undefined var-ref for" p)
      {:result [[(str "LDF @" p)]] :lambdas lambdas :branches {}})
 
-   (primitive-0? p)
+   (primitive? p)
    (do
-     ;; (println "chose primitive-0")
-     (let [command (primitives (nth p 0))]
-       {:result `[~[command]] :lambdas lambdas :branches {}}))
-
-   (primitive-1? p)
-   (do
-     ;; (println "chose primitive-1")
-     (let [command (primitives (nth p 0))
-           {left-result :result lams :lambdas left-branches :branches} (to-instruction-ast (nth p 1) lambdas env)]
-       {
-        :result `[~@left-result ~[command]]
-        :lambdas (merge lams)
-        :branches left-branches
-        }
-       ))
-
-   (primitive-2? p)
-   (do
-     ;; (println "chose primitive-2")
-     (let [command (primitives (nth p 0))
-           {left-result :result left-lams :lambdas left-branches :branches} (to-instruction-ast (nth p 1) lambdas env)
-           {right-result :result right-lams :lambdas right-branches :branches} (to-instruction-ast (nth p 2) lambdas env)]
-       {
-        :result `[~@left-result ~@right-result ~[command]]
-        :lambdas (merge left-lams right-lams)
-        :branches (merge left-branches right-branches)
-        }))
-
+     ;; (println "chose primitive")
+     (cond (= 1 (count p)) (let [command (primitives (nth p 0))]
+                             {:result `[~[command]] :lambdas lambdas :branches {}})
+           (= 2 (count p)) (let [command (primitives (nth p 0))
+                                 {left-result :result lams :lambdas left-branches :branches} (to-instruction-ast (nth p 1) lambdas env)]
+                             {
+                              :result `[~@left-result ~[command]]
+                              :lambdas (merge lams)
+                              :branches left-branches
+                              }
+                             )
+           (= 3 (count p)) (let [command (primitives (nth p 0))
+                                 {left-result :result left-lams :lambdas left-branches :branches} (to-instruction-ast (nth p 1) lambdas env)
+                                 {right-result :result right-lams :lambdas right-branches :branches} (to-instruction-ast (nth p 2) lambdas env)]
+                             {
+                              :result `[~@left-result ~@right-result ~[command]]
+                              :lambdas (merge left-lams right-lams)
+                              :branches (merge left-branches right-branches)
+                              })))
 
    (lambda? p)
    (do
