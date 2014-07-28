@@ -34,6 +34,17 @@
    (some #(= % (count p)) '(1 2 3))
    (some #(= % (first p)) (keys primitives))))
 
+(defn primitive-value? [p]
+  (or (nil? p)
+      (true? p)
+      (false? p)))
+
+(def primitive-values {
+                      nil "LDC 0"
+                      false "LDC 0"
+                      true "LDC 1"
+                      })
+
 (defn application? [p env] (and (list? p)))
 
 (defn built-in-list-tuple [p lambdas env eval is-list]
@@ -104,7 +115,6 @@
    (.endsWith (first (nth instructions (- (count instructions) 2)))
               (str (:current-fun env)))))
 
-
 (defn append-branches [instructions branches]
   (concat instructions (vec (apply concat (vals branches)))))
 
@@ -122,15 +132,10 @@
      ;; (println "chose var-ref")
      {:result [[(env p)]] :lambdas lambdas :branches {}})
 
-   (or (nil? p) (false? p))
+   (primitive-value? p)
    (do
-     ;; (println "chose nil/false")
-     {:result [["LDC 0"]] :lambdas lambdas :branches {}})
-
-   (true? p)
-   (do
-     ;; (println "chose true")
-     {:result [["LDC 1"]] :lambdas lambdas :branches {}})
+     ;; (println "chose primitive value")
+     {:result [[(primitive-values p)]] :lambdas lambdas :branches {}})
 
    (undefined-var-ref? p env)
    (do
