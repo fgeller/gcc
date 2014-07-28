@@ -70,10 +70,6 @@
   (and (list? p)
        (= 'lambda (first p))))
 
-(defn tif? [p]
-  (and (list? p)
-       (= 'tif (first p))))
-
 (defn if? [p]
   (and  (list? p)
         (= 'if (first p))))
@@ -98,6 +94,14 @@
         is-tap (re-matches #"TAP \d+" last-instruction)]
     (if is-tap instructions
         (conj instructions ["RTN"]))))
+
+(defn has-tail-call [instructions env]
+  (and
+   (< 1 (count instructions))
+   (re-matches #"AP \d+" (first (last instructions)))
+   (.endsWith (first (nth instructions (- (count instructions) 2)))
+              (str (:current-fun env)))))
+
 
 (defn append-branches [instructions branches]
   (concat instructions (vec (apply concat (vals branches)))))
@@ -229,81 +233,56 @@
            {left-result :result left-lams :lambdas left-branches :branches} (to-instruction-ast left lambdas env)
            left-instructions  (vec left-result)
 
-           _ (swap! lambda-counter #(+ 1 %))
-           left-branch-name (str "$" (:current-fun env) "-left-branch-" @lambda-counter)
-           left-branch (conj (add-name-to-first-instruction left-branch-name left-instructions) ["JOIN"])
-
-
            {right-result :result right-lams :lambdas right-branches :branches} (to-instruction-ast right lambdas env)
            right-instructions  (vec right-result)
 
-           _ (swap! lambda-counter #(+ 1 %))
-           right-branch-name (str "$" (:current-fun env) "-right-branch-" @lambda-counter)
-           right-branch (conj (add-name-to-first-instruction right-branch-name right-instructions) ["JOIN"])
+           tail-call-in-left (has-tail-call left-instructions env)
+           tail-call-in-right (has-tail-call right-instructions env)
            ]
-       {
-        :result `[~@pred-instructions
-                  ~[(str "SEL @" left-branch-name " @" right-branch-name)]]
-        :lambdas (merge lambdas pred-lams left-lams right-lams)
-        :branches (merge
-                   pred-branches
-                   left-branches
-                   right-branches
-                   {left-branch-name left-branch right-branch-name right-branch})
-        }
-       ))
+       (cond (or tail-call-in-left tail-call-in-right)
+             (let [true-instructions (if tail-call-in-left
+                                       (let [[l] (last left-instructions)]
+                                         `[~@(conj (pop left-instructions) [(str "T" l)])])
+                                       `[~@left-instructions ["RTN"]])
 
-   (tif? p)
-   (do
-     ;; (println "chose tif")
-     (let [pred (nth p 1)
-           left (nth p 2)
-           right (nth p 3)
-           {pred-result :result pred-lams :lambdas pred-branches :branches} (to-instruction-ast pred lambdas env)
-           pred-instructions (vec pred-result)
+                   false-instructions (if tail-call-in-left
+                                        `[~@right-instructions ["RTN"]]
+                                        (let [[l] (last right-instructions)]
+                                          `[ ~@(conj (pop right-instructions) [(str "T" l)])]))
+                   true-offset 1
+                   false-offset (+ 1 (count true-instructions))
+                   ]
+               {
+                :result `[~@pred-instructions
+                          ~[(str "TSEL @" true-offset " @" false-offset)]
+                          ~@true-instructions
+                          ~@false-instructions]
+                :lambdas (merge lambdas pred-lams left-lams right-lams)
+                :branches {}
+                })
 
-           {left-result :result left-lams :lambdas left-branches :branches} (to-instruction-ast left lambdas env)
-           left-instructions  (vec left-result)
+             true ; normal if
+             (let [_ (swap! branch-counter #(+ 1 %))
+                   left-branch-name (str "$" (:current-fun env) "-left-branch-" @branch-counter)
+                   left-branch (conj (add-name-to-first-instruction left-branch-name left-instructions) ["JOIN"])
 
-           {right-result :result right-lams :lambdas right-branches :branches} (to-instruction-ast right lambdas env)
-           right-instructions  (vec right-result)
 
-           tail-call-in-left (and
-                              (< 1 (count left-instructions))
-                              (re-matches #"AP \d+" (first (last left-instructions)))
-                              (.endsWith (first (nth left-instructions (- (count left-instructions) 2)))
-                                         (str (:current-fun env))))
-
-           tail-call-in-right (and
-                              (< 1 (count right-instructions))
-                              (re-matches #"AP \d+" (first (last right-instructions)))
-                              (.endsWith (first (nth right-instructions (- (count right-instructions) 2)))
-                                         (str (:current-fun env))))
-
-           _ (when-not (or tail-call-in-left tail-call-in-right)
-               (throw (Exception. (str "Couldn't find tail call. current-fun: " (:current-fun env) " Left: " left " Right: " right))))
-
-           true-instructions (if tail-call-in-left
-                               (let [[l] (last left-instructions)]
-                                 `[~@(conj (pop left-instructions) [(str "T" l)])])
-                               `[~@left-instructions ["RTN"]])
-
-           false-instructions (if tail-call-in-left
-                                `[~@right-instructions ["RTN"]]
-                                (let [[l] (last right-instructions)]
-                                  `[ ~@(conj (pop right-instructions) [(str "T" l)])]))
-           true-offset 1
-           false-offset (+ 1 (count true-instructions))
-           ]
-       {
-        :result `[~@pred-instructions
-                  ~[(str "TSEL @" true-offset " @" false-offset)]
-                  ~@true-instructions
-                  ~@false-instructions]
-        :lambdas (merge lambdas pred-lams left-lams right-lams)
-        :branches {}
-        }
-       ))
+                   _ (swap! branch-counter #(+ 1 %))
+                   right-branch-name (str "$" (:current-fun env) "-right-branch-" @branch-counter)
+                   right-branch (conj (add-name-to-first-instruction right-branch-name right-instructions) ["JOIN"])
+                   ]
+               {
+                :result `[~@pred-instructions
+                          ~[(str "SEL @" left-branch-name " @" right-branch-name)]]
+                :lambdas (merge lambdas pred-lams left-lams right-lams)
+                :branches (merge
+                           pred-branches
+                           left-branches
+                           right-branches
+                           {left-branch-name left-branch right-branch-name right-branch})
+                })
+             ))
+     )
 
    (defun? p)
    (do

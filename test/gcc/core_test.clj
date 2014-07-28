@@ -124,7 +124,7 @@
 
 (fact "gcc reverse"
       (gcc '((defun fold-left (lst acc fun)
-               (tif (atom? lst)
+               (if (atom? lst)
                     acc
                     (fold-left (cdr lst)
                                (fun acc (car lst))
@@ -133,8 +133,7 @@
                (fold-left lst 0 (lambda (acc next)
                                         (cons next acc))))))
       =>
-      ;; lambda-1 reverse fold-left
-"LD 0 1 ; $lambda-1
+      "LD 0 1 ; $lambda-1
 LD 0 0
 CONS
 RTN
@@ -163,7 +162,7 @@ TAP 3"
 
 (fact "nth"
       (to-instruction-ast '(defun nth (lst i)
-             (tif (= i 0)
+             (if (= i 0)
                   (car lst)
                   (nth (cdr lst)
                        (- i 1))))
@@ -188,7 +187,7 @@ TAP 3"
 
 (fact "add-lines to nth"
       (let [past (to-instruction-ast '(defun nth (lst i)
-                        (tif (= i 0)
+                        (if (= i 0)
                              (car lst)
                              (nth (cdr lst)
                                   (- i 1))))
@@ -213,7 +212,7 @@ TAP 3"
 
 (fact "gcc nth"
       (gcc '((defun nth (lst i)
-               (tif (= i 0)
+               (if (= i 0)
                     (car lst)
                     (nth (cdr lst)
                          (- i 1)))))) => "LD 0 1 ; nth
@@ -234,7 +233,7 @@ TAP 2"
 
 (fact "fold-left"
       (to-instruction-ast '(defun fold-left (lst acc fun)
-             (tif (atom? lst)
+             (if (atom? lst)
                   acc
                   (fold-left (cdr lst)
                              (fun acc (car lst))
@@ -263,7 +262,7 @@ TAP 2"
 
 (fact "gcc fold-left"
       (gcc '((defun fold-left (lst acc fun)
-               (tif (atom? lst)
+               (if (atom? lst)
                     acc
                     (fold-left (cdr lst)
                                (fun acc (car lst))
@@ -313,7 +312,7 @@ TAP 3"
 
 (fact "gcc map"
       (gcc '((defun fold-left (lst acc fun)
-               (tif (atom? lst)
+               (if (atom? lst)
                     acc
                     (fold-left (cdr lst)
                                (fun acc (car lst))
@@ -370,7 +369,7 @@ TAP 3"
 ; (mk-list 5 23 nil) => '(23 23 23 23 23)
 (fact "gcc mk-list"
       (gcc '((defun mk-list (size value lst)
-               (tif (= size 0)
+               (if (= size 0)
                     lst
                     (mk-list (- size 1) value (cons value lst))))))
       => "LD 0 0 ; mk-list
@@ -400,7 +399,7 @@ RTN"
       (gcc '((defun range (n)
                (range-iter n nil))
              (defun range-iter (count out)
-               (tif (= count 0)
+               (if (= count 0)
                     out
                     (range-iter (- count 1) (cons (- count 1) out))))))
       => "LD 0 0 ; range-iter
@@ -437,7 +436,7 @@ LDC 25 ; y
 RTN
 LDC 23 ; x
 RTN"
-(cleanup))
+      (cleanup))
 
 (fact "add-lines with missing name"
       (add-lines {"some-fun" [["LDF @DNE"]]}) => (throws Exception))
@@ -453,7 +452,7 @@ CONS
 LDC 0
 CONS
 RTN"
-(cleanup))
+      (cleanup))
 
 (fact "gcc ifs"
       (gcc '((defun blub ()
@@ -474,25 +473,6 @@ JOIN
 LDC 4 ; $blub-left-branch-3
 JOIN"
       (cleanup))
-
-;; ; hackyness
-;; (fact "if"
-;;       (to-instruction-ast '(if 0 (f1 (f2 x) y) (f3 a b)) {} {})
-;;       =>
-;;       {:result [["LDC 0"]
-;;                 ["TSEL @1 @8"]
-;;                 ["LDF @x"]
-;;                 ["LDF @f2"]
-;;                 ["AP 1"]
-;;                 ["LDF @y"]
-;;                 ["LDF @f1"]
-;;                 ["AP 2"]
-;;                 ["RTN"]
-;;                 ["LDF @a"]
-;;                 ["LDF @b"]
-;;                 ["LDF @f3"]
-;;                 ["AP 2"]
-;;                 ["RTN"]] :lambdas {}})
 
 (fact "let"
       (to-instruction-ast '(let ((x 1)
