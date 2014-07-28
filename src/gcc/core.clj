@@ -118,6 +118,13 @@
 (defn append-branches [instructions branches]
   (concat instructions (vec (apply concat (vals branches)))))
 
+(defn evaluate-forms [forms lambdas env]
+  (let [evaluated (map (fn [a] (to-instruction-ast a lambdas env)) forms)
+        result (vec (apply concat (map (fn [{res :result}] res) evaluated)))
+        lams (reduce (fn [old {lams :lambdas}] (merge old lams)) {} evaluated)
+        branches (reduce (fn [old {branches :branches}] (merge old branches)) {} evaluated)]
+    [result lams branches]))
+
 (defn to-instruction-ast [p lambdas env]
   ;; (println (format "to-instruction-ast p[%s] lambdas[%s] env[%s]" p lambdas env))
 
@@ -179,10 +186,7 @@
                           (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args))
                           {:current-fun name})
 
-           evaluated-bodies (map (fn [a] (to-instruction-ast a lambdas new-env)) bodyrest)
-           body-instructions (vec (apply concat (map (fn [{res :result}] res) evaluated-bodies)))
-           body-lams (reduce (fn [old {lams :lambdas}] (merge old lams)) {} evaluated-bodies)
-           body-branches (reduce (fn [old {branches :branches}] (merge old branches)) {} evaluated-bodies)
+           [body-instructions body-lams body-branches] (evaluate-forms bodyrest lambdas new-env)
 
            lambda-instructions (append-branches (conj (add-name-to-first-instruction name body-instructions) ["RTN"])
                                                 body-branches)
@@ -294,10 +298,7 @@
                           (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args))
                           {:current-fun name name id})
 
-           evaluated-bodies (map (fn [a] (to-instruction-ast a lambdas new-env)) bodyrest)
-           body-instructions (vec (apply concat (map (fn [{res :result}] res) evaluated-bodies)))
-           body-lams (reduce (fn [old {lams :lambdas}] (merge old lams)) {} evaluated-bodies)
-           body-branches (reduce (fn [old {branches :branches}] (merge old branches)) {} evaluated-bodies)
+           [body-instructions body-lams body-branches] (evaluate-forms bodyrest lambdas new-env)
 
            defun-instructions (append-branches (maybe-add-rtn (add-name-to-first-instruction name body-instructions))
                                                body-branches)
@@ -320,11 +321,7 @@
      (let [fun (nth p 0)
            {fun-instructions :result fun-lams :lambdas fun-branches :branches} (to-instruction-ast fun lambdas env)
            args (rest p)
-           x (map (fn [a] (to-instruction-ast a lambdas env)) args)
-           args-instructions (vec (apply concat (map (fn [{res :result lams :lambdas}] res) x)))
-           args-lams (reduce (fn [old {res :result lams :lambdas}] (merge old lams)) {} x)
-           args-branches (reduce (fn [old {branches :branches}] (merge old branches)) {} x)
-
+           [args-instructions args-lams args-branches] (evaluate-forms args lambdas env)
            ap-instruction (str "AP " (count args))
            result `[~@args-instructions ~@fun-instructions ~[ap-instruction]]]
        result
