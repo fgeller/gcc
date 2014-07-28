@@ -35,7 +35,7 @@ instructions automatically.
 
 ## MLISP examples
 
-The top-level defuns are wrapped in a pair of parenthesis to facilicate parsing.
+The top-level defuns are wrapped in a pair of parenthesis for parsing.
 
 ```lisp
     (
@@ -90,7 +90,7 @@ Which compiles to:
 
 ## Usage
 
-You'll need leiningen to build or run gcc.
+You'll need [leiningen](http://leiningen.org/) to build or run gcc.
 
 Command line:
 
@@ -111,5 +111,5 @@ Run tests for hacking:
 
 ## License
 
-No restrictons. This was written for the very fun ICFP Contest 2014, if this can
-be of any help to you -- happy hacking!
+No restrictions.
+This was written for the very fun ICFP Contest 2014, if this can be of any help to you -- happy hacking!
