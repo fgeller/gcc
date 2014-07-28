@@ -190,7 +190,7 @@
                                 single-lambda
                                 reduced-lambdas)
            ]
-       (println (format "🎇  rewrote let[%s] to lambda[%s]" p translated-lambdas))
+       ;; (println (format "🎇  rewrote let[%s] to lambda[%s]" p translated-lambdas))
        (tp translated-lambdas lambdas env)))
 
    (if? p)
