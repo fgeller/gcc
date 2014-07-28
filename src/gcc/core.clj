@@ -238,6 +238,7 @@
            {right-result :result right-lams :lambdas right-branches :branches} (to-instruction-ast right lambdas env)
            right-instructions  (vec right-result)
 
+           ;; TODO only optimize if last statement
            tail-call-in-left (has-tail-call left-instructions env)
            tail-call-in-right (has-tail-call right-instructions env)
            ]
