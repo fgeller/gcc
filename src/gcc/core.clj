@@ -94,50 +94,50 @@
         (conj instructions ["RTN"]))))
 
 (defn tp [p lambdas env] ; => {:result [[]] :lambdas {:l1 [[]]}}
-  (println (format "tp p[%s] lambdas[%s] env[%s]" p lambdas env))
+  ;; (println (format "tp p[%s] lambdas[%s] env[%s]" p lambdas env))
 
   (cond
    (atom? p)
    (do
-     (println "chose atom")
+     ;; (println "chose atom")
      {:result [[(str "LDC " p)]] :lambdas lambdas})
 
    (var-ref? p env)
    (do
-     (println "chose var-ref")
+     ;; (println "chose var-ref")
      {:result [[(env p)]] :lambdas lambdas})
 
    (or (nil? p) (false? p))
    (do
-     (println "chose nil/false")
+     ;; (println "chose nil/false")
      {:result [["LDC 0"]] :lambdas lambdas})
 
    (true? p)
    (do
-     (println "chose true")
+     ;; (println "chose true")
      {:result [["LDC 1"]] :lambdas lambdas})
 
    (undefined-var-ref? p env)
    (do
-     (println "🙀  chose undefined var-ref for" p)
+     ;; (println "🙀  chose undefined var-ref for" p)
      {:result [[(str "LDF @" p)]] :lambdas lambdas})
 
    (primitive-0? p)
    (do
-     (println "chose primitive-0")
+     ;; (println "chose primitive-0")
      (let [command (primitives (nth p 0))]
        {:result `[~[command]] :lambdas lambdas}))
 
    (primitive-1? p)
    (do
-     (println "chose primitive-1")
+     ;; (println "chose primitive-1")
      (let [command (primitives (nth p 0))
            {left-result :result lams :lambdas} (tp (nth p 1) lambdas env)]
        {:result `[~@left-result ~[command]] :lambdas (merge lams)}))
 
    (primitive-2? p)
    (do
-     (println "chose primitive-2")
+     ;; (println "chose primitive-2")
      (let [command (primitives (nth p 0))
            {left-result :result left-lams :lambdas} (tp (nth p 1) lambdas env)
            {right-result :result right-lams :lambdas} (tp (nth p 2) lambdas env)]
@@ -146,7 +146,7 @@
 
    (lambda? p)
    (do
-     (println "chose lambda")
+     ;; (println "chose lambda")
      (swap! lambda-counter #(+ 1 %))
      (let [args (nth p 1)
            bodyrest (nthrest p 2)
@@ -169,7 +169,7 @@
 
    (let? p)
    (do
-     (println "chose let")
+     ;; (println "chose let")
      (let [bindings (nth p 1)
            body (nthrest p 2)
            reduced-lambdas (first (reduce (fn [last next]
@@ -195,7 +195,7 @@
 
    (if? p)
    (do
-     (println "chose if")
+     ;; (println "chose if")
      (let [pred (nth p 1)
            left (nth p 2)
            right (nth p 3)
@@ -222,15 +222,10 @@
         :lambdas (merge lambdas pred-lams left-lams right-lams)
         }
        ))
-   ;; (if? p)
-   ;; (do
-   ;;   (println "chose if")
-   ;;   (let []
-   ;;     {:result [] :lambdas lambdas}))
 
    (tif? p)
    (do
-     (println "chose tif")
+     ;; (println "chose tif")
      (let [pred (nth p 1)
            left (nth p 2)
            right (nth p 3)
@@ -278,7 +273,7 @@
 
    (defun? p)
    (do
-     (println "chose defun")
+     ;; (println "chose defun")
      (let [name (nth p 1)
            args (nth p 2)
            bodyrest (nthrest p 3)
@@ -299,12 +294,12 @@
 
    (built-in-function? p)
    (do
-     (println "chose built-in")
+     ;; (println "chose built-in")
      ((built-in-functions (first p)) p lambdas env tp))
 
    (application? p env)
    (do
-     (println "chose application")
+     ;; (println "chose application")
      (let [fun (nth p 0)
            {fun-instructions :result fun-lams :lambdas} (tp fun lambdas env)
            args (rest p)
