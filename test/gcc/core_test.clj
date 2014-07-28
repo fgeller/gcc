@@ -6,27 +6,27 @@
 (defn cleanup [] (swap! lambda-counter (fn [_] 0)))
 
 (fact "basics"
-      (tp 1 nil nil) => {:result  [["LDC 1"]] :lambdas nil}
-      (tp '(= 1 0) nil nil) => {:result  [["LDC 1"] ["LDC 0"] ["CEQ"]] :lambdas nil}
-      (tp '(> 1 0) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CGT"]] :lambdas nil}
-      (tp '(car 0) nil nil) => {:result [["LDC 0"] ["CAR"]] :lambdas nil}
-      (tp '(cons 1 2) nil nil) => {:result [["LDC 1"] ["LDC 2"] ["CONS"]] :lambdas nil}
-      (tp '(car 0) nil nil) => {:result [["LDC 0"] ["CAR"]] :lambdas nil}
-      (tp '(cdr 0) nil nil) => {:result [["LDC 0"] ["CDR"]] :lambdas nil}
-      (tp '(dbg 0) nil nil) => {:result [["LDC 0"] ["DBUG"]] :lambdas nil}
-      (tp '(brk) nil nil) => {:result [["BRK"]] :lambdas nil}
-      (tp '(atom? 0) nil nil) => {:result [["LDC 0"] ["ATOM"]] :lambdas nil}
-      (tp '(cons 1 nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil}
-      (tp '(cons true nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil}
-      (tp '(cons false nil) nil nil) => {:result [["LDC 0"] ["LDC 0"] ["CONS"]] :lambdas nil}
-      (tp '(mktuple 1 2) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["CONS"]] :lambdas {}}
-      (tp '(mktuple 1 2 3 4) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["LDC 3"] ["LDC 4"] ["CONS"] ["CONS"] ["CONS"]] :lambdas {}}
-      (tp '(mklist 1) {} {}) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas {}}
-      (tp '(mklist 1 2 3 4) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["LDC 3"] ["LDC 4"] ["LDC 0"] ["CONS"] ["CONS"] ["CONS"] ["CONS"]] :lambdas {}}
+      (to-instruction-ast 1 nil nil) => {:result  [["LDC 1"]] :lambdas nil}
+      (to-instruction-ast '(= 1 0) nil nil) => {:result  [["LDC 1"] ["LDC 0"] ["CEQ"]] :lambdas nil}
+      (to-instruction-ast '(> 1 0) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CGT"]] :lambdas nil}
+      (to-instruction-ast '(car 0) nil nil) => {:result [["LDC 0"] ["CAR"]] :lambdas nil}
+      (to-instruction-ast '(cons 1 2) nil nil) => {:result [["LDC 1"] ["LDC 2"] ["CONS"]] :lambdas nil}
+      (to-instruction-ast '(car 0) nil nil) => {:result [["LDC 0"] ["CAR"]] :lambdas nil}
+      (to-instruction-ast '(cdr 0) nil nil) => {:result [["LDC 0"] ["CDR"]] :lambdas nil}
+      (to-instruction-ast '(dbg 0) nil nil) => {:result [["LDC 0"] ["DBUG"]] :lambdas nil}
+      (to-instruction-ast '(brk) nil nil) => {:result [["BRK"]] :lambdas nil}
+      (to-instruction-ast '(atom? 0) nil nil) => {:result [["LDC 0"] ["ATOM"]] :lambdas nil}
+      (to-instruction-ast '(cons 1 nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil}
+      (to-instruction-ast '(cons true nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil}
+      (to-instruction-ast '(cons false nil) nil nil) => {:result [["LDC 0"] ["LDC 0"] ["CONS"]] :lambdas nil}
+      (to-instruction-ast '(mktuple 1 2) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["CONS"]] :lambdas {}}
+      (to-instruction-ast '(mktuple 1 2 3 4) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["LDC 3"] ["LDC 4"] ["CONS"] ["CONS"] ["CONS"]] :lambdas {}}
+      (to-instruction-ast '(mklist 1) {} {}) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas {}}
+      (to-instruction-ast '(mklist 1 2 3 4) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["LDC 3"] ["LDC 4"] ["LDC 0"] ["CONS"] ["CONS"] ["CONS"] ["CONS"]] :lambdas {}}
       (cleanup))
 
 (fact "lambda body"
-      (tp '(lambda (i)
+      (to-instruction-ast '(lambda (i)
                    (brk)
                    (- i 1))
           nil
@@ -40,7 +40,7 @@
           (cleanup))
 
 (fact "defun body"
-      (tp '(defun x (i)
+      (to-instruction-ast '(defun x (i)
                    (brk)
                    (- i 1))
           nil
@@ -54,7 +54,7 @@
           (cleanup))
 
 (fact "let body - empty bindings"
-      (tp '(let ()
+      (to-instruction-ast '(let ()
              (brk)
              (- 0 1))
           nil
@@ -68,7 +68,7 @@
           (cleanup))
 
 (fact "let body - with binding"
-      (tp '(let ((i 0))
+      (to-instruction-ast '(let ((i 0))
              (brk)
              (- i 1))
           nil
@@ -82,7 +82,7 @@
           (cleanup))
 
 (fact "lambda application"
-      (tp '((lambda (i) (- i 1)) 2)
+      (to-instruction-ast '((lambda (i) (- i 1)) 2)
           nil
           nil) => {:result  [["LDC 2"]
                              ["LDF @$lambda-1"]
@@ -95,7 +95,7 @@
       (cleanup))
 
 (fact "reverse"
-      (tp '(defun reverse (lst)
+      (to-instruction-ast '(defun reverse (lst)
              (fold-left lst 0 (lambda (acc next)
                                       (cons next acc))))
           nil
@@ -153,7 +153,7 @@ TAP 3"
       (cleanup))
 
 (fact "nth"
-      (tp '(defun nth (lst i)
+      (to-instruction-ast '(defun nth (lst i)
              (tif (= i 0)
                   (car lst)
                   (nth (cdr lst)
@@ -177,7 +177,7 @@ TAP 3"
           (cleanup))
 
 (fact "add-lines to nth"
-      (let [past (tp '(defun nth (lst i)
+      (let [past (to-instruction-ast '(defun nth (lst i)
                         (tif (= i 0)
                              (car lst)
                              (nth (cdr lst)
@@ -223,7 +223,7 @@ TAP 2"
                         (cleanup))
 
 (fact "fold-left"
-      (tp '(defun fold-left (lst acc fun)
+      (to-instruction-ast '(defun fold-left (lst acc fun)
              (tif (atom? lst)
                   acc
                   (fold-left (cdr lst)
@@ -275,7 +275,7 @@ TAP 3"
       (cleanup))
 
 (fact "map"
-      (tp '(defun map (lst fun)
+      (to-instruction-ast '(defun map (lst fun)
              (reverse (fold-left lst
                         0
                         (lambda (acc next)
@@ -462,7 +462,7 @@ RTN")
 
 ; hackyness
 (fact "if"
-      (tp '(if 0 (f1 (f2 x) y) (f3 a b)) {} {})
+      (to-instruction-ast '(if 0 (f1 (f2 x) y) (f3 a b)) {} {})
       =>
       {:result [["LDC 0"]
                 ["TSEL @1 @8"]
@@ -480,7 +480,7 @@ RTN")
                 ["RTN"]] :lambdas {}})
 
 (fact "let"
-      (tp '(let ((x 1)
+      (to-instruction-ast '(let ((x 1)
                  (y (- x 1)))
              (+ x y))
           {}

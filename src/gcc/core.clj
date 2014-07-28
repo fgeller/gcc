@@ -93,8 +93,8 @@
     (if is-tap instructions
         (conj instructions ["RTN"]))))
 
-(defn tp [p lambdas env] ; => {:result [[]] :lambdas {:l1 [[]]}}
-  ;; (println (format "tp p[%s] lambdas[%s] env[%s]" p lambdas env))
+(defn to-instruction-ast [p lambdas env]
+  (println (format "to-instruction-ast p[%s] lambdas[%s] env[%s]" p lambdas env))
 
   (cond
    (atom? p)
@@ -132,15 +132,15 @@
    (do
      ;; (println "chose primitive-1")
      (let [command (primitives (nth p 0))
-           {left-result :result lams :lambdas} (tp (nth p 1) lambdas env)]
+           {left-result :result lams :lambdas} (to-instruction-ast (nth p 1) lambdas env)]
        {:result `[~@left-result ~[command]] :lambdas (merge lams)}))
 
    (primitive-2? p)
    (do
      ;; (println "chose primitive-2")
      (let [command (primitives (nth p 0))
-           {left-result :result left-lams :lambdas} (tp (nth p 1) lambdas env)
-           {right-result :result right-lams :lambdas} (tp (nth p 2) lambdas env)]
+           {left-result :result left-lams :lambdas} (to-instruction-ast (nth p 1) lambdas env)
+           {right-result :result right-lams :lambdas} (to-instruction-ast (nth p 2) lambdas env)]
        {:result `[~@left-result ~@right-result ~[command]] :lambdas (merge left-lams right-lams)}))
 
 
@@ -159,7 +159,7 @@
                           (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args))
                           {:current-fun name})
 
-           evaluated-bodies (map (fn [a] (tp a lambdas new-env)) bodyrest)
+           evaluated-bodies (map (fn [a] (to-instruction-ast a lambdas new-env)) bodyrest)
            body-instructions (vec (apply concat (map (fn [{res :result lams :lambdas}] res) evaluated-bodies)))
            body-lams (reduce (fn [old {res :result lams :lambdas}] (merge old lams)) {} evaluated-bodies)
 
@@ -191,7 +191,7 @@
                                 reduced-lambdas)
            ]
        ;; (println (format "🎇  rewrote let[%s] to lambda[%s]" p translated-lambdas))
-       (tp translated-lambdas lambdas env)))
+       (to-instruction-ast translated-lambdas lambdas env)))
 
    (if? p)
    (do
@@ -199,13 +199,13 @@
      (let [pred (nth p 1)
            left (nth p 2)
            right (nth p 3)
-           {pred-result :result pred-lams :lambdas} (tp pred lambdas env)
+           {pred-result :result pred-lams :lambdas} (to-instruction-ast pred lambdas env)
            pred-instructions (vec pred-result)
 
-           {left-result :result left-lams :lambdas} (tp left lambdas env)
+           {left-result :result left-lams :lambdas} (to-instruction-ast left lambdas env)
            left-instructions  (vec left-result)
 
-           {right-result :result right-lams :lambdas} (tp right lambdas env)
+           {right-result :result right-lams :lambdas} (to-instruction-ast right lambdas env)
            right-instructions  (vec right-result)
 
            true-instructions `[~@left-instructions ["RTN"]]
@@ -229,13 +229,13 @@
      (let [pred (nth p 1)
            left (nth p 2)
            right (nth p 3)
-           {pred-result :result pred-lams :lambdas} (tp pred lambdas env)
+           {pred-result :result pred-lams :lambdas} (to-instruction-ast pred lambdas env)
            pred-instructions (vec pred-result)
 
-           {left-result :result left-lams :lambdas} (tp left lambdas env)
+           {left-result :result left-lams :lambdas} (to-instruction-ast left lambdas env)
            left-instructions  (vec left-result)
 
-           {right-result :result right-lams :lambdas} (tp right lambdas env)
+           {right-result :result right-lams :lambdas} (to-instruction-ast right lambdas env)
            right-instructions  (vec right-result)
 
            tail-call-in-left (and
@@ -283,7 +283,7 @@
                           (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args))
                           {:current-fun id name id})
 
-           evaluated-bodies (map (fn [a] (tp a lambdas new-env)) bodyrest)
+           evaluated-bodies (map (fn [a] (to-instruction-ast a lambdas new-env)) bodyrest)
            body-instructions (vec (apply concat (map (fn [{res :result lams :lambdas}] res) evaluated-bodies)))
            body-lams (reduce (fn [old {res :result lams :lambdas}] (merge old lams)) {} evaluated-bodies)
 
@@ -295,15 +295,15 @@
    (built-in-function? p)
    (do
      ;; (println "chose built-in")
-     ((built-in-functions (first p)) p lambdas env tp))
+     ((built-in-functions (first p)) p lambdas env to-instruction-ast))
 
    (application? p env)
    (do
      ;; (println "chose application")
      (let [fun (nth p 0)
-           {fun-instructions :result fun-lams :lambdas} (tp fun lambdas env)
+           {fun-instructions :result fun-lams :lambdas} (to-instruction-ast fun lambdas env)
            args (rest p)
-           x (map (fn [a] (tp a lambdas env)) args)
+           x (map (fn [a] (to-instruction-ast a lambdas env)) args)
            args-instructions (vec (apply concat (map (fn [{res :result lams :lambdas}] res) x)))
            args-lams (reduce (fn [old {res :result lams :lambdas}] (merge old lams)) {} x)
            ap-instruction (str "AP " (count args))
@@ -313,7 +313,7 @@
        result
        {:result result :lambdas (merge lambdas fun-lams args-lams)}))
 
-   true (println "i dunno how to tp" p "with type" (type p))
+   true (println "i dunno how to to-instruction-ast" p "with type" (type p))
    ))
 
 (defn add-lines [lams]
@@ -340,7 +340,7 @@
 (defn gcc [defuns]
   (let [base-env {}
         base-lambdas {}
-        asts (map #(tp % base-lambdas base-env) defuns)
+        asts (map #(to-instruction-ast % base-lambdas base-env) defuns)
         all (apply merge (map #(:lambdas %) asts))
         ast-wl (add-lines all)
         out (clojure.string/join "\n" (flatten (map (fn [[_ instr]] [instr]) ast-wl)))]
