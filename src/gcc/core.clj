@@ -294,10 +294,10 @@
            args (nth p 2)
            bodyrest (nthrest p 3)
 
-           id (str "LDF @" name) ; todo: need to distinguish between def and defn?
+           load-instruction (str "LDF @" name)
            new-env (merge env
                           (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args))
-                          {:current-fun name name id})
+                          {:current-fun name name load-instruction})
 
            [body-instructions body-lams body-branches] (evaluate-forms bodyrest lambdas new-env)
 
