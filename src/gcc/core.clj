@@ -153,8 +153,15 @@
    (application? ast) `(~(rewrite (nth ast 0)) ~@(map rewrite (nthrest ast 1)))
    true ast))
 
-(defn to-instruction-ast [p lambdas env]
-  ;; (println (format "to-instruction-ast p[%s] lambdas[%s] env[%s]" p lambdas env))
+(defn evaluate-forms [forms eval lambdas env]
+  (let [evaluated (map (fn [a] (eval a lambdas env)) forms)
+        result (vec (apply concat (map (fn [{res :result}] res) evaluated)))
+        lams (reduce (fn [old {lams :lambdas}] (merge old lams)) {} evaluated)
+        branches (reduce (fn [old {branches :branches}] (merge old branches)) {} evaluated)]
+    [result lams branches]))
+
+(defn evaluate [p lambdas env]
+  ;; (println (format "evaluate p[%s] lambdas[%s] env[%s]" p lambdas env))
 
   (cond
    (atom? p)
@@ -183,7 +190,7 @@
      (cond (= 1 (count p)) (let [command (primitives (nth p 0))]
                              {:result `[~[command]] :lambdas lambdas :branches {}})
            (= 2 (count p)) (let [command (primitives (nth p 0))
-                                 {left-result :result lams :lambdas left-branches :branches} (to-instruction-ast (nth p 1) lambdas env)]
+                                 {left-result :result lams :lambdas left-branches :branches} (evaluate (nth p 1) lambdas env)]
                              {
                               :result `[~@left-result ~[command]]
                               :lambdas (merge lams)
@@ -191,8 +198,8 @@
                               }
                              )
            (= 3 (count p)) (let [command (primitives (nth p 0))
-                                 {left-result :result left-lams :lambdas left-branches :branches} (to-instruction-ast (nth p 1) lambdas env)
-                                 {right-result :result right-lams :lambdas right-branches :branches} (to-instruction-ast (nth p 2) lambdas env)]
+                                 {left-result :result left-lams :lambdas left-branches :branches} (evaluate (nth p 1) lambdas env)
+                                 {right-result :result right-lams :lambdas right-branches :branches} (evaluate (nth p 2) lambdas env)]
                              {
                               :result `[~@left-result ~@right-result ~[command]]
                               :lambdas (merge left-lams right-lams)
@@ -214,7 +221,7 @@
                           (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args))
                           {:current-fun name})
 
-           [body-instructions body-lams body-branches] (evaluate-forms bodyrest lambdas new-env)
+           [body-instructions body-lams body-branches] (evaluate-forms bodyrest evaluate lambdas new-env)
 
            lambda-instructions (append-branches (conj (add-name-to-first-instruction name body-instructions) ["RTN"])
                                                 body-branches)
@@ -231,13 +238,13 @@
      (let [pred (nth p 1)
            left (nth p 2)
            right (nth p 3)
-           {pred-result :result pred-lams :lambdas pred-branches :branches} (to-instruction-ast pred lambdas env)
+           {pred-result :result pred-lams :lambdas pred-branches :branches} (evaluate pred lambdas env)
            pred-instructions (vec pred-result)
 
-           {left-result :result left-lams :lambdas left-branches :branches} (to-instruction-ast left lambdas env)
+           {left-result :result left-lams :lambdas left-branches :branches} (evaluate left lambdas env)
            left-instructions  (vec left-result)
 
-           {right-result :result right-lams :lambdas right-branches :branches} (to-instruction-ast right lambdas env)
+           {right-result :result right-lams :lambdas right-branches :branches} (evaluate right lambdas env)
            right-instructions  (vec right-result)
 
            ;; TODO only optimize if last statement
@@ -303,7 +310,7 @@
                                            args))
                           {:current-fun name name load-instruction})
 
-           [body-instructions body-lams body-branches] (evaluate-forms bodyrest lambdas new-env)
+           [body-instructions body-lams body-branches] (evaluate-forms bodyrest evaluate lambdas new-env)
 
            defun-instructions (append-branches (maybe-add-rtn (add-name-to-first-instruction name body-instructions))
                                                body-branches)
@@ -318,15 +325,15 @@
    (built-in-function? p)
    (do
      ;; (println "chose built-in")
-     ((built-in-functions (first p)) p lambdas env to-instruction-ast))
+     ((built-in-functions (first p)) p lambdas env evaluate))
 
    (application? p)
    (do
      ;; (println "chose application")
      (let [fun (nth p 0)
-           {fun-instructions :result fun-lams :lambdas fun-branches :branches} (to-instruction-ast fun lambdas env)
+           {fun-instructions :result fun-lams :lambdas fun-branches :branches} (evaluate fun lambdas env)
            args (rest p)
-           [args-instructions args-lams args-branches] (evaluate-forms args lambdas env)
+           [args-instructions args-lams args-branches] (evaluate-forms args evaluate lambdas env)
            ap-instruction (str "AP " (count args))
            result `[~@args-instructions ~@fun-instructions ~[ap-instruction]]]
        result
@@ -336,15 +343,8 @@
         :branches (merge fun-branches args-branches)
         }))
 
-   true (println "i dunno how to to-instruction-ast" p "with type" (type p))
+   true (println "i dunno how to evaluate" p "with type" (type p))
    ))
-
-(defn evaluate-forms [forms lambdas env]
-  (let [evaluated (map (fn [a] (to-instruction-ast a lambdas env)) forms)
-        result (vec (apply concat (map (fn [{res :result}] res) evaluated)))
-        lams (reduce (fn [old {lams :lambdas}] (merge old lams)) {} evaluated)
-        branches (reduce (fn [old {branches :branches}] (merge old branches)) {} evaluated)]
-    [result lams branches]))
 
 (defn add-lines [lams]
   (let [main-fun (lams "main")
@@ -369,12 +369,11 @@
 
 (defn gcc [defuns]
   (let [rewritten-asts (map #(rewrite %) defuns)
-        asts (map #(to-instruction-ast % {} {}) rewritten-asts)
+        asts (map #(evaluate % {} {}) rewritten-asts)
         all (apply merge (map #(:lambdas %) asts))
         ast-wl (add-lines all)
         out (string/join "\n" (flatten (map (fn [[_ instr]] [instr]) ast-wl)))]
-    out
-    ))
+    out))
 
 (defn -main [& args]
   (let [in  (apply concat (map (fn [f] (read-string (slurp f))) args))

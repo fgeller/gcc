@@ -12,7 +12,7 @@ Main approach:
 
 ## Implementation details
 
-The main mapping from MLISP to GCC happens in `to-instruction-ast` based on a big
+The main mapping from MLISP to GCC happens in `evaluate` based on a big
 `cond` statement. Given that the assembly has so support for LISPy
 functionality, the mapping from our MLISP to GCC is mostly straight-forward.
 

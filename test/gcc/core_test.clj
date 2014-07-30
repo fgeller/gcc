@@ -8,27 +8,27 @@
   (swap! branch-counter (fn [_] 0)))
 
 (fact "basics"
-      (to-instruction-ast 1 nil nil) => {:result  [["LDC 1"]] :lambdas nil :branches {}}
-      (to-instruction-ast '(= 1 0) nil nil) => {:result  [["LDC 1"] ["LDC 0"] ["CEQ"]] :lambdas nil :branches {}}
-      (to-instruction-ast '(> 1 0) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CGT"]] :lambdas nil :branches {}}
-      (to-instruction-ast '(car 0) nil nil) => {:result [["LDC 0"] ["CAR"]] :lambdas nil :branches {}}
-      (to-instruction-ast '(cons 1 2) nil nil) => {:result [["LDC 1"] ["LDC 2"] ["CONS"]] :lambdas nil :branches {}}
-      (to-instruction-ast '(car 0) nil nil) => {:result [["LDC 0"] ["CAR"]] :lambdas nil :branches {}}
-      (to-instruction-ast '(cdr 0) nil nil) => {:result [["LDC 0"] ["CDR"]] :lambdas nil :branches {}}
-      (to-instruction-ast '(dbg 0) nil nil) => {:result [["LDC 0"] ["DBUG"]] :lambdas nil :branches {}}
-      (to-instruction-ast '(brk) nil nil) => {:result [["BRK"]] :lambdas nil :branches {}}
-      (to-instruction-ast '(atom? 0) nil nil) => {:result [["LDC 0"] ["ATOM"]] :lambdas nil :branches {}}
-      (to-instruction-ast '(cons 1 nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil :branches {}}
-      (to-instruction-ast '(cons true nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil :branches {}}
-      (to-instruction-ast '(cons false nil) nil nil) => {:result [["LDC 0"] ["LDC 0"] ["CONS"]] :lambdas nil :branches {}}
-      (to-instruction-ast '(mktuple 1 2) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["CONS"]] :lambdas {} :branches {}}
-      (to-instruction-ast '(mktuple 1 2 3 4) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["LDC 3"] ["LDC 4"] ["CONS"] ["CONS"] ["CONS"]] :lambdas {} :branches {}}
-      (to-instruction-ast '(mklist 1) {} {}) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas {} :branches {}}
-      (to-instruction-ast '(mklist 1 2 3 4) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["LDC 3"] ["LDC 4"] ["LDC 0"] ["CONS"] ["CONS"] ["CONS"] ["CONS"]] :lambdas {} :branches {}}
+      (evaluate 1 nil nil) => {:result  [["LDC 1"]] :lambdas nil :branches {}}
+      (evaluate '(= 1 0) nil nil) => {:result  [["LDC 1"] ["LDC 0"] ["CEQ"]] :lambdas nil :branches {}}
+      (evaluate '(> 1 0) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CGT"]] :lambdas nil :branches {}}
+      (evaluate '(car 0) nil nil) => {:result [["LDC 0"] ["CAR"]] :lambdas nil :branches {}}
+      (evaluate '(cons 1 2) nil nil) => {:result [["LDC 1"] ["LDC 2"] ["CONS"]] :lambdas nil :branches {}}
+      (evaluate '(car 0) nil nil) => {:result [["LDC 0"] ["CAR"]] :lambdas nil :branches {}}
+      (evaluate '(cdr 0) nil nil) => {:result [["LDC 0"] ["CDR"]] :lambdas nil :branches {}}
+      (evaluate '(dbg 0) nil nil) => {:result [["LDC 0"] ["DBUG"]] :lambdas nil :branches {}}
+      (evaluate '(brk) nil nil) => {:result [["BRK"]] :lambdas nil :branches {}}
+      (evaluate '(atom? 0) nil nil) => {:result [["LDC 0"] ["ATOM"]] :lambdas nil :branches {}}
+      (evaluate '(cons 1 nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil :branches {}}
+      (evaluate '(cons true nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil :branches {}}
+      (evaluate '(cons false nil) nil nil) => {:result [["LDC 0"] ["LDC 0"] ["CONS"]] :lambdas nil :branches {}}
+      (evaluate '(mktuple 1 2) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["CONS"]] :lambdas {} :branches {}}
+      (evaluate '(mktuple 1 2 3 4) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["LDC 3"] ["LDC 4"] ["CONS"] ["CONS"] ["CONS"]] :lambdas {} :branches {}}
+      (evaluate '(mklist 1) {} {}) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas {} :branches {}}
+      (evaluate '(mklist 1 2 3 4) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["LDC 3"] ["LDC 4"] ["LDC 0"] ["CONS"] ["CONS"] ["CONS"] ["CONS"]] :lambdas {} :branches {}}
       (cleanup))
 
 (fact "lambda body"
-      (to-instruction-ast '(lambda (i)
+      (evaluate '(lambda (i)
                    (brk)
                    (- i 1))
           nil
@@ -44,7 +44,7 @@
           (cleanup))
 
 (fact "defun body"
-      (to-instruction-ast '(defun x (i)
+      (evaluate '(defun x (i)
                    (brk)
                    (- i 1))
           nil
@@ -68,7 +68,7 @@
       (cleanup))
 
 ;; (fact "let body - empty bindings"
-;;       (to-instruction-ast '(let ()
+;;       (evaluate '(let ()
 ;;              (brk)
 ;;              (- 0 1))
 ;;           nil
@@ -106,7 +106,7 @@ RTN"
       (cleanup))
 
 ;; (fact "let body - with binding"
-;;       (to-instruction-ast '(let ((i 0))
+;;       (evaluate '(let ((i 0))
 ;;              (brk)
 ;;              (- i 1))
 ;;           nil
@@ -120,7 +120,7 @@ RTN"
 ;;                    :branches {}}
 ;;           (cleanup))
 ;; (fact "let body - with binding"
-;;       (to-instruction-ast '(let ((i 0))
+;;       (evaluate '(let ((i 0))
 ;;              (brk)
 ;;              (- i 1))
 ;;           nil
@@ -135,7 +135,7 @@ RTN"
 ;;           (cleanup))
 
 (fact "lambda application"
-      (to-instruction-ast '((lambda (i) (- i 1)) 2)
+      (evaluate '((lambda (i) (- i 1)) 2)
           nil
           nil) => {:result  [["LDC 2"]
                              ["LDF @$lambda-1"]
@@ -149,7 +149,7 @@ RTN"
       (cleanup))
 
 (fact "reverse"
-      (to-instruction-ast '(defun reverse (lst)
+      (evaluate '(defun reverse (lst)
              (fold-left lst 0 (lambda (acc next)
                                       (cons next acc))))
           nil
@@ -207,7 +207,7 @@ TAP 3"
       (cleanup))
 
 (fact "nth"
-      (to-instruction-ast '(defun nth (lst i)
+      (evaluate '(defun nth (lst i)
              (if (= i 0)
                   (car lst)
                   (nth (cdr lst)
@@ -232,7 +232,7 @@ TAP 3"
           (cleanup))
 
 (fact "add-lines to nth"
-      (let [past (to-instruction-ast '(defun nth (lst i)
+      (let [past (evaluate '(defun nth (lst i)
                         (if (= i 0)
                              (car lst)
                              (nth (cdr lst)
@@ -278,7 +278,7 @@ TAP 2"
                         (cleanup))
 
 (fact "fold-left"
-      (to-instruction-ast '(defun fold-left (lst acc fun)
+      (evaluate '(defun fold-left (lst acc fun)
              (if (atom? lst)
                   acc
                   (fold-left (cdr lst)
@@ -331,7 +331,7 @@ TAP 3"
       (cleanup))
 
 (fact "map"
-      (to-instruction-ast '(defun map (lst fun)
+      (evaluate '(defun map (lst fun)
              (reverse (fold-left lst
                         0
                         (lambda (acc next)
@@ -521,7 +521,7 @@ JOIN"
       (cleanup))
 
 ;; (fact "let"
-;;       (to-instruction-ast '(let ((x 1)
+;;       (evaluate '(let ((x 1)
 ;;                  (y (- x 1)))
 ;;              (+ x y))
 ;;           {}
