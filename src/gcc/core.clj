@@ -31,7 +31,7 @@
 
 (defn primitive? [p]
   (and
-   (list? p)
+   (seq? p)
    (some #(= % (count p)) '(1 2 3))
    (some #(= % (first p)) (keys primitives))))
 
@@ -46,7 +46,7 @@
                       true "LDC 1"
                       })
 
-(defn application? [p env] (and (list? p)))
+(defn application? [p] (seq? p))
 
 (defn built-in-list-tuple [p lambdas env eval is-list]
   (let [args (rest p)
@@ -74,25 +74,25 @@
                          'mklist built-in-mklist
                          'mktuple built-in-mktuple
                          })
-(defn built-in-function? [p] (and (list? p) (find built-in-functions (first p))))
+(defn built-in-function? [p] (and (seq? p) (find built-in-functions (first p))))
 
 (defn defun? [p]
-  (and (list? p)
+  (and (seq? p)
        (= 'defun (first p))))
 
 (defn lambda? [p]
-  (and (list? p)
+  (and (seq? p)
        (= 'lambda (first p))))
 
 (defn if? [p]
-  (and  (list? p)
+  (and  (seq? p)
         (= 'if (first p))))
 
 (defn var-ref? [p env]
   (and (symbol? p) (find env p)))
 
 (defn let? [p]
-  (and (list? p)
+  (and (seq? p)
        (= 'let (first p))))
 
 (defn undefined-var-ref? [p env]
@@ -118,6 +118,40 @@
 
 (defn append-branches [instructions branches]
   (concat instructions (vec (apply concat (vals branches)))))
+
+(defn rewrite [ast]
+  (cond
+   (let? ast)
+   (let [bindings (nth ast 1)
+         body (nthrest ast 2)
+         reduced-lambdas (first (reduce (fn [last next]
+                                          (let [name (first next)
+                                                value-body (second next)
+                                                napp2 (list (reverse (reduce (fn [a b] (conj a b))
+                                                                             (list (list name) 'lambda)
+                                                                             last))
+                                                            value-body)
+                                                ]
+                                            (list napp2)))
+                                        body
+                                        (reverse bindings)))
+         single-lambda (list (reverse (reduce (fn [last next] (conj last next))
+                                              (list (list) 'lambda)
+                                              body)))
+         rewritten-lambdas (if (= 0 (count bindings)) single-lambda reduced-lambdas)]
+     rewritten-lambdas)
+
+   ;; TODO: need this one?
+   (primitive? ast) (cond (= 1 (count ast)) ast
+                          (= 2 (count ast)) `(~(first ast) ~(rewrite (second ast)))
+                          (= 3 (count ast)) `(~(first ast) ~(rewrite (second ast)) ~(rewrite (nth ast 2))))
+
+   (lambda? ast) `(~(nth ast 0) ~(nth ast 1) ~@(map rewrite (nthrest ast 2)))
+   (defun? ast) `(~(nth ast 0) ~(nth ast 1) ~(nth ast 2) ~@(map rewrite (nthrest ast 3)))
+   (if? ast) `(~(nth ast 0) ~(rewrite (nth ast 1)) ~(rewrite (nth ast 2)) ~(rewrite (nth ast 3)))
+   (built-in-function? ast) `(~(nth ast 0) ~@(map rewrite (nthrest ast 1)))
+   (application? ast) `(~(rewrite (nth ast 0)) ~@(map rewrite (nthrest ast 1)))
+   true ast))
 
 (defn to-instruction-ast [p lambdas env]
   ;; (println (format "to-instruction-ast p[%s] lambdas[%s] env[%s]" p lambdas env))
@@ -190,32 +224,6 @@
         :lambdas (merge lambdas {name lambda-instructions} body-lams)
         :branches {}
         }))
-
-   (let? p)
-   (do
-     ;; (println "chose let")
-     (let [bindings (nth p 1)
-           body (nthrest p 2)
-           reduced-lambdas (first (reduce (fn [last next]
-                                            (let [name (first next)
-                                                  value-body (second next)
-                                                  napp2 (list (reverse (reduce (fn [a b] (conj a b))
-                                                                               (list (list name) 'lambda)
-                                                                               last))
-                                                              value-body)
-                                                  ]
-                                              (list napp2)
-                                              ))
-                                          body
-                                          (reverse bindings)))
-           single-lambda (reverse (reduce (fn [last next]
-                                            (conj last next)) (list (list) 'lambda) body))
-           translated-lambdas (if (= 0 (count bindings))
-                                single-lambda
-                                reduced-lambdas)
-           ]
-       ;; (println (format "🎇  rewrote let[%s] to lambda[%s]" p translated-lambdas))
-       (to-instruction-ast translated-lambdas lambdas env)))
 
    (if? p)
    (do
@@ -290,7 +298,9 @@
 
            load-instruction (str "LDF @" name)
            new-env (merge env
-                          (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args))
+                          (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))]))
+                                           []
+                                           args))
                           {:current-fun name name load-instruction})
 
            [body-instructions body-lams body-branches] (evaluate-forms bodyrest lambdas new-env)
@@ -310,7 +320,7 @@
      ;; (println "chose built-in")
      ((built-in-functions (first p)) p lambdas env to-instruction-ast))
 
-   (application? p env)
+   (application? p)
    (do
      ;; (println "chose application")
      (let [fun (nth p 0)
@@ -358,9 +368,8 @@
     (vec result)))
 
 (defn gcc [defuns]
-  (let [base-env {}
-        base-lambdas {}
-        asts (map #(to-instruction-ast % base-lambdas base-env) defuns)
+  (let [rewritten-asts (map #(rewrite %) defuns)
+        asts (map #(to-instruction-ast % {} {}) rewritten-asts)
         all (apply merge (map #(:lambdas %) asts))
         ast-wl (add-lines all)
         out (string/join "\n" (flatten (map (fn [[_ instr]] [instr]) ast-wl)))]
