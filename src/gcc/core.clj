@@ -1,5 +1,6 @@
 (ns gcc.core
-  (:require [clojure.java.io :as io])
+  (:require [clojure.java.io :as io]
+            [clojure.string :as string])
   (:gen-class :main true))
 
 (defn string->number [str]
@@ -118,13 +119,6 @@
 (defn append-branches [instructions branches]
   (concat instructions (vec (apply concat (vals branches)))))
 
-(defn evaluate-forms [forms lambdas env]
-  (let [evaluated (map (fn [a] (to-instruction-ast a lambdas env)) forms)
-        result (vec (apply concat (map (fn [{res :result}] res) evaluated)))
-        lams (reduce (fn [old {lams :lambdas}] (merge old lams)) {} evaluated)
-        branches (reduce (fn [old {branches :branches}] (merge old branches)) {} evaluated)]
-    [result lams branches]))
-
 (defn to-instruction-ast [p lambdas env]
   ;; (println (format "to-instruction-ast p[%s] lambdas[%s] env[%s]" p lambdas env))
 
@@ -180,7 +174,7 @@
 
            name (str "$lambda-" @lambda-counter)
            env-with-updated-arg-refs (into {} (map (fn [[name instr]]
-                                                     [name (clojure.string/replace instr #"LD (\d+) (\d+)" (fn [[_ frm arg]] (str "LD " (+ 1 (string->number frm)) " " arg)))])
+                                                     [name (string/replace instr #"LD (\d+) (\d+)" (fn [[_ frm arg]] (str "LD " (+ 1 (string->number frm)) " " arg)))])
                                                    env))
            new-env (merge env-with-updated-arg-refs
                           (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args))
@@ -335,19 +329,26 @@
    true (println "i dunno how to to-instruction-ast" p "with type" (type p))
    ))
 
+(defn evaluate-forms [forms lambdas env]
+  (let [evaluated (map (fn [a] (to-instruction-ast a lambdas env)) forms)
+        result (vec (apply concat (map (fn [{res :result}] res) evaluated)))
+        lams (reduce (fn [old {lams :lambdas}] (merge old lams)) {} evaluated)
+        branches (reduce (fn [old {branches :branches}] (merge old branches)) {} evaluated)]
+    [result lams branches]))
+
 (defn add-lines [lams]
   (let [main-fun (lams "main")
         ordered-flattened-lams (vec (apply concat (cons main-fun (vals (dissoc lams "main")))))
         [_ p-ast-with-lines names-lines] (reduce (fn [[l p m] [instr names]]
                                                    (if names
-                                                     [(+ 1 l) (conj p [l (str instr " ; " (clojure.string/join ", " names))]) (merge m (into {} (map (fn [n] {n l}) names)))]
+                                                     [(+ 1 l) (conj p [l (str instr " ; " (string/join ", " names))]) (merge m (into {} (map (fn [n] {n l}) names)))]
                                                      [(+ 1 l) (conj p [l instr]) m]
                                                      ))
                                                  [0 [] {}]
                                                  ordered-flattened-lams)
         result (map (fn [[l instr]]
-                      (let [num-replaced (clojure.string/replace instr #"@(\d+)" (fn [[_ n]] (str (+ l (string->number n)))))
-                            names-replaced (clojure.string/replace num-replaced #"@([^ ]+)" (fn [[_ n]]
+                      (let [num-replaced (string/replace instr #"@(\d+)" (fn [[_ n]] (str (+ l (string->number n)))))
+                            names-replaced (string/replace num-replaced #"@([^ ]+)" (fn [[_ n]]
                                                                                            (when-not (names-lines n) (throw (Exception. (str "Unknown name: [" n "]"))))
                                                                                            (str (names-lines n))))]
                         [l names-replaced]))
@@ -362,7 +363,7 @@
         asts (map #(to-instruction-ast % base-lambdas base-env) defuns)
         all (apply merge (map #(:lambdas %) asts))
         ast-wl (add-lines all)
-        out (clojure.string/join "\n" (flatten (map (fn [[_ instr]] [instr]) ast-wl)))]
+        out (string/join "\n" (flatten (map (fn [[_ instr]] [instr]) ast-wl)))]
     out
     ))
 
@@ -370,7 +371,7 @@
   (let [in  (apply concat (map (fn [f] (read-string (slurp f))) args))
         out (gcc in)
         out-file (spit "lambdaman.gcc" out)]
-    (println (format "input:\n====================\n%s\n====================" (clojure.string/join "\n--------------------\n" in)))
+    (println (format "input:\n====================\n%s\n====================" (string/join "\n--------------------\n" in)))
     (println (format "output:\n====================\n%s\n====================" out))
     (println "wrote output to lambdaman.gcc")
     (println "good luck. 🙋")))
