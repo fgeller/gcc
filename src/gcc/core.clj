@@ -50,10 +50,8 @@
 
 (defn built-in-list-tuple [p lambdas env eval is-list]
   (let [args (rest p)
-        evaluated-args (map (fn [a] (eval a lambdas env)) args)
-        args-instructions (vec (apply concat (map (fn [{res :result}] res) evaluated-args)))
-        args-lams (reduce (fn [old {lams :lambdas}] (merge old lams)) {} evaluated-args)
-        args-branches (reduce (fn [old {branches :branches}] (merge old branches)) {} evaluated-args)
+        [args-instructions args-lams args-branches] (evaluate-forms (rest p) eval lambdas env)
+
         cons-chain (vec (map (fn [_] ["CONS"]) (if is-list args (pop args))))
         list-instructions (vec (concat (if is-list
                                          (conj args-instructions ["LDC 0"])
@@ -75,6 +73,8 @@
                          'mktuple built-in-mktuple
                          })
 (defn built-in-function? [p] (and (seq? p) (find built-in-functions (first p))))
+
+(defn quoted? [p] (and (seq? p) (= 'quote (first p))))
 
 (defn defun? [p]
   (and (seq? p)
@@ -140,6 +140,10 @@
                                               body)))
          rewritten-lambdas (if (= 0 (count bindings)) single-lambda reduced-lambdas)]
      rewritten-lambdas)
+
+   (quoted? ast)
+   (let [rewritten (cons 'mklist (first (rest ast)))]
+     rewritten)
 
    ;; TODO: need this one?
    (primitive? ast) (cond (= 1 (count ast)) ast

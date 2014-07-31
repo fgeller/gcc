@@ -58,6 +58,27 @@
                    :branches {}}
           (cleanup))
 
+(fact "rewrite quotes to mklist"
+      (rewrite ''(1 2 3))
+      => '(mklist 1 2 3))
+
+(fact "gcc quote via mklist"
+      (gcc '((defun some-fibs () '(1 1 2 3 5))))
+      => "LDC 1 ; some-fibs
+LDC 1
+LDC 2
+LDC 3
+LDC 5
+LDC 0
+CONS
+CONS
+CONS
+CONS
+CONS
+RTN")
+
+;; TODO: nested quoted
+
 (fact "rewrite let body - empty bindings"
       (rewrite '(let ()
                   (brk)
