@@ -88,21 +88,6 @@ RTN")
                    (- 0 1)))
       (cleanup))
 
-;; (fact "let body - empty bindings"
-;;       (evaluate '(let ()
-;;              (brk)
-;;              (- 0 1))
-;;           nil
-;;           nil) => {:result  [["LDF @$lambda-1"]]
-;;                    :lambdas {"$lambda-1"
-;;                              [["BRK" ["$lambda-1"]]
-;;                               ["LDC 0"]
-;;                               ["LDC 1"]
-;;                               ["SUB"]
-;;                               ["RTN"]]}
-;;                    :branches {}}
-;;           (cleanup))
-
 (fact "rewrite let body - with binding"
       (rewrite '(let ((i 0))
                   (brk)
@@ -125,35 +110,6 @@ LD 0 0
 ADD
 RTN"
       (cleanup))
-
-;; (fact "let body - with binding"
-;;       (evaluate '(let ((i 0))
-;;              (brk)
-;;              (- i 1))
-;;           nil
-;;           nil) => {:result  [["LDC 0"] ["LDF @$lambda-1"] ["AP 1"]]
-;;                    :lambdas {"$lambda-1"
-;;                              [["BRK" ["$lambda-1"]]
-;;                               ["LD 0 0"]
-;;                               ["LDC 1"]
-;;                               ["SUB"]
-;;                               ["RTN"]]}
-;;                    :branches {}}
-;;           (cleanup))
-;; (fact "let body - with binding"
-;;       (evaluate '(let ((i 0))
-;;              (brk)
-;;              (- i 1))
-;;           nil
-;;           nil) => {:result  [["LDC 0"] ["LDF @$lambda-1"] ["AP 1"]]
-;;                    :lambdas {"$lambda-1"
-;;                              [["BRK" ["$lambda-1"]]
-;;                               ["LD 0 0"]
-;;                               ["LDC 1"]
-;;                               ["SUB"]
-;;                               ["RTN"]]}
-;;                    :branches {}}
-;;           (cleanup))
 
 (fact "lambda application"
       (evaluate '((lambda (i) (- i 1)) 2)
@@ -540,28 +496,3 @@ JOIN
 LDC 4 ; $blub-left-branch-3
 JOIN"
       (cleanup))
-
-;; (fact "let"
-;;       (evaluate '(let ((x 1)
-;;                  (y (- x 1)))
-;;              (+ x y))
-;;           {}
-;;           {})
-;;       =>
-;;       {:result [["LDC 1"]
-;;                 ["LDF @$lambda-1"]
-;;                 ["AP 1"]]
-;;        :lambdas {"$lambda-1"
-;;                   [["LD 0 0" ["$lambda-1"]]
-;;                    ["LDC 1"]
-;;                    ["SUB"]
-;;                    ["LDF @$lambda-2"]
-;;                    ["AP 1"]
-;;                    ["RTN"]]
-;;                   "$lambda-2"
-;;                   [["LD 1 0" ["$lambda-2"]]
-;;                    ["LD 0 0"]
-;;                    ["ADD"]
-;;                    ["RTN"]]}
-;;        :branches {}}
-;;       (cleanup))
