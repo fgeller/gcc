@@ -7,6 +7,13 @@
   (let [n (read-string str)]
        (if (number? n) n nil)))
 
+(defn evaluate-forms [forms eval lambdas env]
+  (let [evaluated (map (fn [a] (eval a lambdas env)) forms)
+        result (vec (apply concat (map (fn [{res :result}] res) evaluated)))
+        lams (reduce (fn [old {lams :lambdas}] (merge old lams)) {} evaluated)
+        branches (reduce (fn [old {branches :branches}] (merge old branches)) {} evaluated)]
+    [result lams branches]))
+
 (def atom? number?)
 (defn quote? [p] (= 'quote (first p)))
 
@@ -156,13 +163,6 @@
    (built-in-function? ast) `(~(nth ast 0) ~@(map rewrite (nthrest ast 1)))
    (application? ast) `(~(rewrite (nth ast 0)) ~@(map rewrite (nthrest ast 1)))
    true ast))
-
-(defn evaluate-forms [forms eval lambdas env]
-  (let [evaluated (map (fn [a] (eval a lambdas env)) forms)
-        result (vec (apply concat (map (fn [{res :result}] res) evaluated)))
-        lams (reduce (fn [old {lams :lambdas}] (merge old lams)) {} evaluated)
-        branches (reduce (fn [old {branches :branches}] (merge old branches)) {} evaluated)]
-    [result lams branches]))
 
 (defn evaluate [p lambdas env]
   ;; (println (format "evaluate p[%s] lambdas[%s] env[%s]" p lambdas env))
