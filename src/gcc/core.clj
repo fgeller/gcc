@@ -134,17 +134,11 @@
          reduced-lambdas (first (reduce (fn [last next]
                                           (let [name (first next)
                                                 value-body (second next)
-                                                napp2 (list (reverse (reduce (fn [a b] (conj a b))
-                                                                             (list (list name) 'lambda)
-                                                                             last))
-                                                            value-body)
-                                                ]
-                                            (list napp2)))
+                                                next-body `(((~'lambda (~name) ~@last) ~value-body))]
+                                            next-body))
                                         body
                                         (reverse bindings)))
-         single-lambda (list (reverse (reduce (fn [last next] (conj last next))
-                                              (list (list) 'lambda)
-                                              body)))
+         single-lambda `((~'lambda () ~@body))
          rewritten-lambdas (if (= 0 (count bindings)) single-lambda reduced-lambdas)]
      rewritten-lambdas)
 

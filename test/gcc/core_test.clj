@@ -100,6 +100,15 @@ RTN")
       '((lambda (i) (brk) (- i 1)) 0)
       (cleanup))
 
+(fact "rewrite let body - with multiple bindings"
+      (rewrite '(let ((i 0)
+                      (j 1))
+                  (brk)
+                  (- i j)))
+      =>
+      '((lambda (i) ((lambda (j) (brk) (- i j)) 1)) 0)
+      (cleanup))
+
 (fact "gcc defun with let"
       (gcc '((defun helo ()
                (let ((a 23))
