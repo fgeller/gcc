@@ -3,22 +3,23 @@
             [clojure.string :as string])
   (:gen-class :main true))
 
-(defn string->number [str]
-  (let [n (read-string str)]
-       (if (number? n) n nil)))
-
-(defn evaluate-forms [forms eval lambdas env]
-  (let [evaluated (map (fn [a] (eval a lambdas env)) forms)
-        result (vec (apply concat (map (fn [{res :result}] res) evaluated)))
-        lams (reduce (fn [old {lams :lambdas}] (merge old lams)) {} evaluated)
-        branches (reduce (fn [old {branches :branches}] (merge old branches)) {} evaluated)]
-    [result lams branches]))
-
-(def atom? number?)
-(defn quote? [p] (= 'quote (first p)))
+(declare built-in-mklist)
+(declare built-in-mktuple)
+(declare evaluate-forms)
 
 (def lambda-counter (atom 0))
 (def branch-counter (atom 0))
+
+
+(def primitive-values {
+                      nil "LDC 0"
+                      false "LDC 0"
+                      true "LDC 1"
+                      })
+(def built-in-functions {
+                         'mklist built-in-mklist
+                         'mktuple built-in-mktuple
+                         })
 
 (def primitives {
                  '= "CEQ"
@@ -36,6 +37,12 @@
                  'brk "BRK"
                  })
 
+(defn string->number [str]
+  (let [n (read-string str)]
+    (when (number? n) n)))
+
+(def atom? number?)
+
 (defn primitive? [p]
   (and
    (seq? p)
@@ -47,38 +54,8 @@
       (true? p)
       (false? p)))
 
-(def primitive-values {
-                      nil "LDC 0"
-                      false "LDC 0"
-                      true "LDC 1"
-                      })
-
 (defn application? [p] (seq? p))
 
-(defn built-in-list-tuple [p lambdas env eval is-list]
-  (let [args (rest p)
-        [args-instructions args-lams args-branches] (evaluate-forms (rest p) eval lambdas env)
-
-        cons-chain (vec (map (fn [_] ["CONS"]) (if is-list args (pop args))))
-        list-instructions (vec (concat (if is-list
-                                         (conj args-instructions ["LDC 0"])
-                                         args-instructions) cons-chain))]
-    {
-     :result list-instructions
-     :lambdas (merge lambdas args-lams)
-     :branches args-branches
-     }))
-
-(defn built-in-mktuple [p lambdas env eval]
-  (built-in-list-tuple p lambdas env eval false))
-
-(defn built-in-mklist [p lambdas env eval]
-  (built-in-list-tuple p lambdas env eval true))
-
-(def built-in-functions {
-                         'mklist built-in-mklist
-                         'mktuple built-in-mktuple
-                         })
 (defn built-in-function? [p] (and (seq? p) (find built-in-functions (first p))))
 
 (defn quoted? [p] (and (seq? p) (= 'quote (first p))))
@@ -344,6 +321,33 @@
 
    true (println "i dunno how to evaluate" p "with type" (type p))
    ))
+
+(defn evaluate-forms [forms eval lambdas env]
+  (let [evaluated (map (fn [a] (eval a lambdas env)) forms)
+        result (vec (apply concat (map (fn [{res :result}] res) evaluated)))
+        lams (reduce (fn [old {lams :lambdas}] (merge old lams)) {} evaluated)
+        branches (reduce (fn [old {branches :branches}] (merge old branches)) {} evaluated)]
+    [result lams branches]))
+
+(defn built-in-list-tuple [p lambdas env eval is-list]
+  (let [args (rest p)
+        [args-instructions args-lams args-branches] (evaluate-forms (rest p) eval lambdas env)
+
+        cons-chain (vec (map (fn [_] ["CONS"]) (if is-list args (pop args))))
+        list-instructions (vec (concat (if is-list
+                                         (conj args-instructions ["LDC 0"])
+                                         args-instructions) cons-chain))]
+    {
+     :result list-instructions
+     :lambdas (merge lambdas args-lams)
+     :branches args-branches
+     }))
+
+(defn built-in-mktuple [p lambdas env eval]
+  (built-in-list-tuple p lambdas env eval false))
+
+(defn built-in-mklist [p lambdas env eval]
+  (built-in-list-tuple p lambdas env eval true))
 
 (defn add-lines [lams]
   (let [main-fun (lams "main")
