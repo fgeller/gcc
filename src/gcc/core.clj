@@ -152,11 +152,11 @@
                           (= 2 (count ast)) `(~(first ast) ~(rewrite (second ast)))
                           (= 3 (count ast)) `(~(first ast) ~(rewrite (second ast)) ~(rewrite (nth ast 2))))
 
-   (lambda? ast) `(~(nth ast 0) ~(nth ast 1) ~@(map rewrite (nthrest ast 2)))
-   (defun? ast) `(~(nth ast 0) ~(nth ast 1) ~(nth ast 2) ~@(map rewrite (nthrest ast 3)))
-   (if? ast) `(~(nth ast 0) ~(rewrite (nth ast 1)) ~(rewrite (nth ast 2)) ~(rewrite (nth ast 3)))
+   (lambda? ast)            `(~(nth ast 0) ~(nth ast 1) ~@(map rewrite (nthrest ast 2)))
+   (defun? ast)             `(~(nth ast 0) ~(nth ast 1) ~(nth ast 2) ~@(map rewrite (nthrest ast 3)))
+   (if? ast)                `(~(nth ast 0) ~(rewrite (nth ast 1)) ~(rewrite (nth ast 2)) ~(rewrite (nth ast 3)))
    (built-in-function? ast) `(~(nth ast 0) ~@(map rewrite (nthrest ast 1)))
-   (application? ast) `(~(rewrite (nth ast 0)) ~@(map rewrite (nthrest ast 1)))
+   (application? ast)       `(~(rewrite (nth ast 0)) ~@(map rewrite (nthrest ast 1)))
    true ast))
 
 (defn evaluate [p lambdas env]
