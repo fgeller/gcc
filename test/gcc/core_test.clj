@@ -62,6 +62,10 @@
       (rewrite ''(1 2 3))
       => '(mklist 1 2 3))
 
+(fact "rewrite quotes to mklist with nested lists"
+      (rewrite ''(1 (1 2) 3)) => '(mklist 1 (mklist 1 2) 3)
+      (rewrite ''(1 (1 (1 2)) 3)) => '(mklist 1 (mklist 1 (mklist 1 2)) 3))
+
 (fact "gcc quote via mklist"
       (gcc '((defun some-fibs () '(1 1 2 3 5))))
       => "LDC 1 ; some-fibs

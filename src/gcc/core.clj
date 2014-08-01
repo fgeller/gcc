@@ -149,7 +149,8 @@
      rewritten-lambdas)
 
    (quoted? ast)
-   (let [rewritten (cons 'mklist (first (rest ast)))]
+   (let [rewrite-body (defn rw [a] (if (seq? a) (cons 'mklist (map rw a)) a))
+         rewritten (first (map rw (rest ast)))]
      rewritten)
 
    ;; TODO: need this one?
