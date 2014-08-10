@@ -64,12 +64,12 @@
           (cleanup))
 
 (fact "rewrite quotes to mklist"
-      (rewrite ''(1 2 3))
+      (rewrite-sexp ''(1 2 3))
       => '(mklist 1 2 3))
 
 (fact "rewrite quotes to mklist with nested lists"
-      (rewrite ''(1 (1 2) 3)) => '(mklist 1 (mklist 1 2) 3)
-      (rewrite ''(1 (1 (1 2)) 3)) => '(mklist 1 (mklist 1 (mklist 1 2)) 3))
+      (rewrite-sexp ''(1 (1 2) 3)) => '(mklist 1 (mklist 1 2) 3)
+      (rewrite-sexp ''(1 (1 (1 2)) 3)) => '(mklist 1 (mklist 1 (mklist 1 2)) 3))
 
 (fact "gcc quote via mklist"
       (gcc '((defun some-fibs () '(1 1 2 3 5))))
@@ -89,7 +89,7 @@ RTN")
 ;; TODO: nested quoted
 
 (fact "rewrite let body - empty bindings"
-      (rewrite '(let ()
+      (rewrite-sexp '(let ()
                   (brk)
                   (- 0 1)))
       => '((lambda ()
@@ -98,7 +98,7 @@ RTN")
       (cleanup))
 
 (fact "rewrite let body - with binding"
-      (rewrite '(let ((i 0))
+      (rewrite-sexp '(let ((i 0))
                   (brk)
                   (- i 1)))
       =>
@@ -106,7 +106,7 @@ RTN")
       (cleanup))
 
 (fact "rewrite let body - with multiple bindings"
-      (rewrite '(let ((i 0)
+      (rewrite-sexp '(let ((i 0)
                       (j 1))
                   (brk)
                   (- i j)))

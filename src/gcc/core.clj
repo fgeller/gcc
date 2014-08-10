@@ -111,7 +111,7 @@
    (let [args (map interpret-sexp (rest sexp))]
      (apply (:interpret (primitives (first sexp))) args))))
 
-(defn rewrite [ast]
+(defn rewrite-sexp [ast]
   (cond
    (let? ast)
    (let [bindings (nth ast 1)
@@ -134,14 +134,14 @@
 
    ;; TODO: need this one?
    (primitive? ast) (cond (= 1 (count ast)) ast
-                          (= 2 (count ast)) `(~(first ast) ~(rewrite (second ast)))
-                          (= 3 (count ast)) `(~(first ast) ~(rewrite (second ast)) ~(rewrite (nth ast 2))))
+                          (= 2 (count ast)) `(~(first ast) ~(rewrite-sexp (second ast)))
+                          (= 3 (count ast)) `(~(first ast) ~(rewrite-sexp (second ast)) ~(rewrite-sexp (nth ast 2))))
 
-   (lambda? ast)            `(~(nth ast 0) ~(nth ast 1) ~@(map rewrite (nthrest ast 2)))
-   (defun? ast)             `(~(nth ast 0) ~(nth ast 1) ~(nth ast 2) ~@(map rewrite (nthrest ast 3)))
-   (if? ast)                `(~(nth ast 0) ~(rewrite (nth ast 1)) ~(rewrite (nth ast 2)) ~(rewrite (nth ast 3)))
-   (built-in-function? ast) `(~(nth ast 0) ~@(map rewrite (nthrest ast 1)))
-   (application? ast)       `(~(rewrite (nth ast 0)) ~@(map rewrite (nthrest ast 1)))
+   (lambda? ast)            `(~(nth ast 0) ~(nth ast 1) ~@(map rewrite-sexp (nthrest ast 2)))
+   (defun? ast)             `(~(nth ast 0) ~(nth ast 1) ~(nth ast 2) ~@(map rewrite-sexp (nthrest ast 3)))
+   (if? ast)                `(~(nth ast 0) ~(rewrite-sexp (nth ast 1)) ~(rewrite-sexp (nth ast 2)) ~(rewrite-sexp (nth ast 3)))
+   (built-in-function? ast) `(~(nth ast 0) ~@(map rewrite-sexp (nthrest ast 1)))
+   (application? ast)       `(~(rewrite-sexp (nth ast 0)) ~@(map rewrite-sexp (nthrest ast 1)))
    true ast))
 
 (defn evaluate [p lambdas env]
@@ -379,7 +379,7 @@
     (vec result)))
 
 (defn gcc [defuns]
-  (let [rewritten-asts (map #(rewrite %) defuns)
+  (let [rewritten-asts (map #(rewrite-sexp %) defuns)
         asts (map #(evaluate % {} {}) rewritten-asts)
         all (apply merge (map #(:lambdas %) asts))
         ast-wl (add-lines all)
