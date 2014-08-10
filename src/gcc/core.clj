@@ -379,7 +379,7 @@
     (vec result)))
 
 (defn gcc [defuns]
-  (let [rewritten-asts (map #(rewrite-sexp %) defuns)
+  (let [rewritten-asts (map rewrite-sexp defuns)
         asts (map #(evaluate % {} {}) rewritten-asts)
         all (apply merge (map #(:lambdas %) asts))
         ast-wl (add-lines all)
