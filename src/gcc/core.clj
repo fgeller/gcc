@@ -5,7 +5,7 @@
 
 (declare built-in-mklist)
 (declare built-in-mktuple)
-(declare evaluate-forms)
+(declare compile-sexprs-to-gcc)
 
 (def lambda-counter (atom 0))
 (def branch-counter (atom 0))
@@ -144,8 +144,8 @@
    (application? ast)       `(~(rewrite-sexp (nth ast 0)) ~@(map rewrite-sexp (nthrest ast 1)))
    true ast))
 
-(defn evaluate [p lambdas env]
-  ;; (println (format "evaluate p[%s] lambdas[%s] env[%s]" p lambdas env))
+(defn compile-sexp-to-gcc [p lambdas env]
+  ;; (println (format "compile-sexp-to-gcc p[%s] lambdas[%s] env[%s]" p lambdas env))
 
   (cond
    (atom? p)
@@ -174,7 +174,7 @@
      (cond (= 1 (count p)) (let [command (:compile (primitives (nth p 0)))]
                              {:result `[~[command]] :lambdas lambdas :branches {}})
            (= 2 (count p)) (let [command (:compile (primitives (nth p 0)))
-                                 {left-result :result lams :lambdas left-branches :branches} (evaluate (nth p 1) lambdas env)]
+                                 {left-result :result lams :lambdas left-branches :branches} (compile-sexp-to-gcc (nth p 1) lambdas env)]
                              {
                               :result `[~@left-result ~[command]]
                               :lambdas (merge lams)
@@ -182,8 +182,8 @@
                               }
                              )
            (= 3 (count p)) (let [command (:compile (primitives (nth p 0)))
-                                 {left-result :result left-lams :lambdas left-branches :branches} (evaluate (nth p 1) lambdas env)
-                                 {right-result :result right-lams :lambdas right-branches :branches} (evaluate (nth p 2) lambdas env)]
+                                 {left-result :result left-lams :lambdas left-branches :branches} (compile-sexp-to-gcc (nth p 1) lambdas env)
+                                 {right-result :result right-lams :lambdas right-branches :branches} (compile-sexp-to-gcc (nth p 2) lambdas env)]
                              {
                               :result `[~@left-result ~@right-result ~[command]]
                               :lambdas (merge left-lams right-lams)
@@ -205,7 +205,7 @@
                           (into {} (reduce (fn [a b] (conj a [b (str "LD 0 " (count a))])) [] args))
                           {:current-fun name})
 
-           [body-instructions body-lams body-branches] (evaluate-forms bodyrest evaluate lambdas new-env)
+           [body-instructions body-lams body-branches] (compile-sexprs-to-gcc bodyrest compile-sexp-to-gcc lambdas new-env)
 
            lambda-instructions (append-branches (conj (add-name-to-first-instruction name body-instructions) ["RTN"])
                                                 body-branches)
@@ -222,13 +222,13 @@
      (let [pred (nth p 1)
            left (nth p 2)
            right (nth p 3)
-           {pred-result :result pred-lams :lambdas pred-branches :branches} (evaluate pred lambdas env)
+           {pred-result :result pred-lams :lambdas pred-branches :branches} (compile-sexp-to-gcc pred lambdas env)
            pred-instructions (vec pred-result)
 
-           {left-result :result left-lams :lambdas left-branches :branches} (evaluate left lambdas env)
+           {left-result :result left-lams :lambdas left-branches :branches} (compile-sexp-to-gcc left lambdas env)
            left-instructions  (vec left-result)
 
-           {right-result :result right-lams :lambdas right-branches :branches} (evaluate right lambdas env)
+           {right-result :result right-lams :lambdas right-branches :branches} (compile-sexp-to-gcc right lambdas env)
            right-instructions  (vec right-result)
 
            ;; TODO only optimize if last statement
@@ -294,7 +294,7 @@
                                            args))
                           {:current-fun name name load-instruction})
 
-           [body-instructions body-lams body-branches] (evaluate-forms bodyrest evaluate lambdas new-env)
+           [body-instructions body-lams body-branches] (compile-sexprs-to-gcc bodyrest compile-sexp-to-gcc lambdas new-env)
 
            defun-instructions (append-branches (maybe-add-rtn (add-name-to-first-instruction name body-instructions))
                                                body-branches)
@@ -309,15 +309,15 @@
    (built-in-function? p)
    (do
      ;; (println "chose built-in")
-     ((built-in-functions (first p)) p lambdas env evaluate))
+     ((built-in-functions (first p)) p lambdas env compile-sexp-to-gcc))
 
    (application? p)
    (do
      ;; (println "chose application")
      (let [fun (nth p 0)
-           {fun-instructions :result fun-lams :lambdas fun-branches :branches} (evaluate fun lambdas env)
+           {fun-instructions :result fun-lams :lambdas fun-branches :branches} (compile-sexp-to-gcc fun lambdas env)
            args (rest p)
-           [args-instructions args-lams args-branches] (evaluate-forms args evaluate lambdas env)
+           [args-instructions args-lams args-branches] (compile-sexprs-to-gcc args compile-sexp-to-gcc lambdas env)
            ap-instruction (str "AP " (count args))
            result `[~@args-instructions ~@fun-instructions ~[ap-instruction]]]
        result
@@ -327,19 +327,19 @@
         :branches (merge fun-branches args-branches)
         }))
 
-   true (println "i dunno how to evaluate" p "with type" (type p))
+   true (println "i dunno how to compile-sexp-to-gcc" p "with type" (type p))
    ))
 
-(defn evaluate-forms [forms eval lambdas env]
-  (let [evaluated (map (fn [a] (eval a lambdas env)) forms)
-        result (vec (apply concat (map (fn [{res :result}] res) evaluated)))
-        lams (reduce (fn [old {lams :lambdas}] (merge old lams)) {} evaluated)
-        branches (reduce (fn [old {branches :branches}] (merge old branches)) {} evaluated)]
+(defn compile-sexprs-to-gcc [forms compile lambdas env]
+  (let [compiled (map (fn [a] (compile a lambdas env)) forms)
+        result (vec (apply concat (map (fn [{res :result}] res) compiled)))
+        lams (reduce (fn [old {lams :lambdas}] (merge old lams)) {} compiled)
+        branches (reduce (fn [old {branches :branches}] (merge old branches)) {} compiled)]
     [result lams branches]))
 
-(defn built-in-list-tuple [p lambdas env eval is-list]
+(defn built-in-list-tuple [p lambdas env compile is-list]
   (let [args (rest p)
-        [args-instructions args-lams args-branches] (evaluate-forms (rest p) eval lambdas env)
+        [args-instructions args-lams args-branches] (compile-sexprs-to-gcc (rest p) compile lambdas env)
 
         cons-chain (vec (map (fn [_] ["CONS"]) (if is-list args (pop args))))
         list-instructions (vec (concat (if is-list
@@ -351,11 +351,11 @@
      :branches args-branches
      }))
 
-(defn built-in-mktuple [p lambdas env eval]
-  (built-in-list-tuple p lambdas env eval false))
+(defn built-in-mktuple [p lambdas env compile]
+  (built-in-list-tuple p lambdas env compile false))
 
-(defn built-in-mklist [p lambdas env eval]
-  (built-in-list-tuple p lambdas env eval true))
+(defn built-in-mklist [p lambdas env compile]
+  (built-in-list-tuple p lambdas env compile true))
 
 (defn add-lines [lams]
   (let [main-fun (lams "main")
@@ -380,7 +380,7 @@
 
 (defn gcc [defuns]
   (let [rewritten-asts (map rewrite-sexp defuns)
-        asts (map #(evaluate % {} {}) rewritten-asts)
+        asts (map #(compile-sexp-to-gcc % {} {}) rewritten-asts)
         all (apply merge (map #(:lambdas %) asts))
         ast-wl (add-lines all)
         out (string/join "\n" (flatten (map (fn [[_ instr]] [instr]) ast-wl)))]

@@ -13,27 +13,27 @@
       (interpret-sexp '(- (+ 23 4) 4)) => 23)
 
 (fact "basics"
-      (evaluate 1 nil nil) => {:result  [["LDC 1"]] :lambdas nil :branches {}}
-      (evaluate '(= 1 0) nil nil) => {:result  [["LDC 1"] ["LDC 0"] ["CEQ"]] :lambdas nil :branches {}}
-      (evaluate '(> 1 0) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CGT"]] :lambdas nil :branches {}}
-      (evaluate '(car 0) nil nil) => {:result [["LDC 0"] ["CAR"]] :lambdas nil :branches {}}
-      (evaluate '(cons 1 2) nil nil) => {:result [["LDC 1"] ["LDC 2"] ["CONS"]] :lambdas nil :branches {}}
-      (evaluate '(car 0) nil nil) => {:result [["LDC 0"] ["CAR"]] :lambdas nil :branches {}}
-      (evaluate '(cdr 0) nil nil) => {:result [["LDC 0"] ["CDR"]] :lambdas nil :branches {}}
-      (evaluate '(dbg 0) nil nil) => {:result [["LDC 0"] ["DBUG"]] :lambdas nil :branches {}}
-      (evaluate '(brk) nil nil) => {:result [["BRK"]] :lambdas nil :branches {}}
-      (evaluate '(atom? 0) nil nil) => {:result [["LDC 0"] ["ATOM"]] :lambdas nil :branches {}}
-      (evaluate '(cons 1 nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil :branches {}}
-      (evaluate '(cons true nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil :branches {}}
-      (evaluate '(cons false nil) nil nil) => {:result [["LDC 0"] ["LDC 0"] ["CONS"]] :lambdas nil :branches {}}
-      (evaluate '(mktuple 1 2) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["CONS"]] :lambdas {} :branches {}}
-      (evaluate '(mktuple 1 2 3 4) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["LDC 3"] ["LDC 4"] ["CONS"] ["CONS"] ["CONS"]] :lambdas {} :branches {}}
-      (evaluate '(mklist 1) {} {}) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas {} :branches {}}
-      (evaluate '(mklist 1 2 3 4) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["LDC 3"] ["LDC 4"] ["LDC 0"] ["CONS"] ["CONS"] ["CONS"] ["CONS"]] :lambdas {} :branches {}}
+      (compile-sexp-to-gcc 1 nil nil) => {:result  [["LDC 1"]] :lambdas nil :branches {}}
+      (compile-sexp-to-gcc '(= 1 0) nil nil) => {:result  [["LDC 1"] ["LDC 0"] ["CEQ"]] :lambdas nil :branches {}}
+      (compile-sexp-to-gcc '(> 1 0) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CGT"]] :lambdas nil :branches {}}
+      (compile-sexp-to-gcc '(car 0) nil nil) => {:result [["LDC 0"] ["CAR"]] :lambdas nil :branches {}}
+      (compile-sexp-to-gcc '(cons 1 2) nil nil) => {:result [["LDC 1"] ["LDC 2"] ["CONS"]] :lambdas nil :branches {}}
+      (compile-sexp-to-gcc '(car 0) nil nil) => {:result [["LDC 0"] ["CAR"]] :lambdas nil :branches {}}
+      (compile-sexp-to-gcc '(cdr 0) nil nil) => {:result [["LDC 0"] ["CDR"]] :lambdas nil :branches {}}
+      (compile-sexp-to-gcc '(dbg 0) nil nil) => {:result [["LDC 0"] ["DBUG"]] :lambdas nil :branches {}}
+      (compile-sexp-to-gcc '(brk) nil nil) => {:result [["BRK"]] :lambdas nil :branches {}}
+      (compile-sexp-to-gcc '(atom? 0) nil nil) => {:result [["LDC 0"] ["ATOM"]] :lambdas nil :branches {}}
+      (compile-sexp-to-gcc '(cons 1 nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil :branches {}}
+      (compile-sexp-to-gcc '(cons true nil) nil nil) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas nil :branches {}}
+      (compile-sexp-to-gcc '(cons false nil) nil nil) => {:result [["LDC 0"] ["LDC 0"] ["CONS"]] :lambdas nil :branches {}}
+      (compile-sexp-to-gcc '(mktuple 1 2) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["CONS"]] :lambdas {} :branches {}}
+      (compile-sexp-to-gcc '(mktuple 1 2 3 4) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["LDC 3"] ["LDC 4"] ["CONS"] ["CONS"] ["CONS"]] :lambdas {} :branches {}}
+      (compile-sexp-to-gcc '(mklist 1) {} {}) => {:result [["LDC 1"] ["LDC 0"] ["CONS"]] :lambdas {} :branches {}}
+      (compile-sexp-to-gcc '(mklist 1 2 3 4) {} {}) => {:result [["LDC 1"] ["LDC 2"] ["LDC 3"] ["LDC 4"] ["LDC 0"] ["CONS"] ["CONS"] ["CONS"] ["CONS"]] :lambdas {} :branches {}}
       (cleanup))
 
 (fact "lambda body"
-      (evaluate '(lambda (i)
+      (compile-sexp-to-gcc '(lambda (i)
                    (brk)
                    (- i 1))
           nil
@@ -49,7 +49,7 @@
           (cleanup))
 
 (fact "defun body"
-      (evaluate '(defun x (i)
+      (compile-sexp-to-gcc '(defun x (i)
                    (brk)
                    (- i 1))
           nil
@@ -130,7 +130,7 @@ RTN"
       (cleanup))
 
 (fact "lambda application"
-      (evaluate '((lambda (i) (- i 1)) 2)
+      (compile-sexp-to-gcc '((lambda (i) (- i 1)) 2)
           nil
           nil) => {:result  [["LDC 2"]
                              ["LDF @$lambda-1"]
@@ -144,7 +144,7 @@ RTN"
       (cleanup))
 
 (fact "reverse"
-      (evaluate '(defun reverse (lst)
+      (compile-sexp-to-gcc '(defun reverse (lst)
              (fold-left lst 0 (lambda (acc next)
                                       (cons next acc))))
           nil
@@ -202,7 +202,7 @@ TAP 3"
       (cleanup))
 
 (fact "nth"
-      (evaluate '(defun nth (lst i)
+      (compile-sexp-to-gcc '(defun nth (lst i)
              (if (= i 0)
                   (car lst)
                   (nth (cdr lst)
@@ -227,7 +227,7 @@ TAP 3"
           (cleanup))
 
 (fact "add-lines to nth"
-      (let [past (evaluate '(defun nth (lst i)
+      (let [past (compile-sexp-to-gcc '(defun nth (lst i)
                         (if (= i 0)
                              (car lst)
                              (nth (cdr lst)
@@ -273,7 +273,7 @@ TAP 2"
                         (cleanup))
 
 (fact "fold-left"
-      (evaluate '(defun fold-left (lst acc fun)
+      (compile-sexp-to-gcc '(defun fold-left (lst acc fun)
              (if (atom? lst)
                   acc
                   (fold-left (cdr lst)
@@ -326,7 +326,7 @@ TAP 3"
       (cleanup))
 
 (fact "map"
-      (evaluate '(defun map (lst fun)
+      (compile-sexp-to-gcc '(defun map (lst fun)
              (reverse (fold-left lst
                         0
                         (lambda (acc next)
