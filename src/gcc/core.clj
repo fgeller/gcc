@@ -22,19 +22,19 @@
                          })
 
 (def primitives {
-                 '= "CEQ"
-                 '> "CGT"
-                 '>= "CGTE"
-                 'cons "CONS"
-                 'car "CAR"
-                 'cdr "CDR"
-                 '+ "ADD"
-                 '- "SUB"
-                 '* "MUL"
-                 '/ "DIV"
-                 'atom? "ATOM"
-                 'dbg "DBUG"
-                 'brk "BRK"
+                 '= {:compile "CEQ"}
+                 '> {:compile "CGT"}
+                 '>= {:compile "CGTE"}
+                 'cons {:compile "CONS"}
+                 'car {:compile "CAR"}
+                 'cdr {:compile "CDR"}
+                 '+ {:compile "ADD" :interpret +}
+                 '- {:compile "SUB" :interpret -}
+                 '* {:compile "MUL"}
+                 '/ {:compile "DIV"}
+                 'atom? {:compile "ATOM"}
+                 'dbg {:compile "DBUG"}
+                 'brk {:compile "BRK"}
                  })
 
 (defn string->number [str]
@@ -103,6 +103,14 @@
 (defn append-branches [instructions branches]
   (concat instructions (vec (apply concat (vals branches)))))
 
+(defn interpret-sexp [sexp]
+  (cond
+   (atom? sexp) sexp
+
+   (primitive? sexp)
+   (let [args (map interpret-sexp (rest sexp))]
+     (apply (:interpret (primitives (first sexp))) args))))
+
 (defn rewrite [ast]
   (cond
    (let? ast)
@@ -163,9 +171,9 @@
    (primitive? p)
    (do
      ;; (println "chose primitive")
-     (cond (= 1 (count p)) (let [command (primitives (nth p 0))]
+     (cond (= 1 (count p)) (let [command (:compile (primitives (nth p 0)))]
                              {:result `[~[command]] :lambdas lambdas :branches {}})
-           (= 2 (count p)) (let [command (primitives (nth p 0))
+           (= 2 (count p)) (let [command (:compile (primitives (nth p 0)))
                                  {left-result :result lams :lambdas left-branches :branches} (evaluate (nth p 1) lambdas env)]
                              {
                               :result `[~@left-result ~[command]]
@@ -173,7 +181,7 @@
                               :branches left-branches
                               }
                              )
-           (= 3 (count p)) (let [command (primitives (nth p 0))
+           (= 3 (count p)) (let [command (:compile (primitives (nth p 0)))
                                  {left-result :result left-lams :lambdas left-branches :branches} (evaluate (nth p 1) lambdas env)
                                  {right-result :result right-lams :lambdas right-branches :branches} (evaluate (nth p 2) lambdas env)]
                              {

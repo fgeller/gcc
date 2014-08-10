@@ -7,6 +7,11 @@
   (swap! lambda-counter (fn [_] 0))
   (swap! branch-counter (fn [_] 0)))
 
+(fact "interpret basics"
+      (interpret-sexp '(+ 1 1)) => 2
+      (interpret-sexp '(- 1 1)) => 0
+      (interpret-sexp '(- (+ 23 4) 4)) => 23)
+
 (fact "basics"
       (evaluate 1 nil nil) => {:result  [["LDC 1"]] :lambdas nil :branches {}}
       (evaluate '(= 1 0) nil nil) => {:result  [["LDC 1"] ["LDC 0"] ["CEQ"]] :lambdas nil :branches {}}
